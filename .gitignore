@@ -1,0 +1,11 @@
+# Node.js
+node_modules
+
+# Build
+main.js
+
+# OS
+.DS_Store
+
+# AI
+.crush
