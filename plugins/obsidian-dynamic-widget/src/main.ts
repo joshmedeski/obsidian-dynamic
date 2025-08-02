@@ -1,15 +1,17 @@
-import { Plugin } from 'obsidian';
+import { Plugin } from "obsidian";
+
 import {
   DynamicWidgetView,
   VIEW_TYPE_DYNAMIC_WIDGET,
-} from './src/dynamic-widget-view';
+} from "./dynamic-widget-view";
 
 export default class DynamicWidget extends Plugin {
+  // biome-ignore lint/suspicious/useAwait: Obsidian's API requires this to be async
   async onload() {
     // Register the dynamic widget view
     this.registerView(
       VIEW_TYPE_DYNAMIC_WIDGET,
-      (leaf) => new DynamicWidgetView(leaf)
+      (leaf) => new DynamicWidgetView(leaf),
     );
 
     // Auto-activate the widget in the right sidebar
@@ -22,8 +24,8 @@ export default class DynamicWidget extends Plugin {
 
     // Add command to toggle the dynamic widget
     this.addCommand({
-      id: 'open-dynamic-widget',
-      name: 'Open Dynamic Widget',
+      id: "open-dynamic-widget",
+      name: "Open Dynamic Widget",
       callback: () => {
         this.activateView();
       },
@@ -36,7 +38,9 @@ export default class DynamicWidget extends Plugin {
 
     // Create and activate the view in right sidebar
     const leaf = this.app.workspace.getLeftLeaf(false);
-    if (!leaf) return;
+    if (!leaf) {
+      return;
+    }
 
     await leaf.setViewState({
       type: VIEW_TYPE_DYNAMIC_WIDGET,

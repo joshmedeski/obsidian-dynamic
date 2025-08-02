@@ -1,15 +1,16 @@
-import { Plugin } from 'obsidian';
+import { Plugin } from "obsidian";
 import {
   VerticalVideoWidgetView,
   VIEW_TYPE_VERTICAL_VIDEO_WIDGET,
-} from './widgetView';
+} from "./widgetView";
 
 export default class VerticalVideoPlugin extends Plugin {
+  // biome-ignore lint/suspicious/useAwait: Obsidian's API requires this to be async
   async onload() {
     // Register the dynamic widget view
     this.registerView(
       VIEW_TYPE_VERTICAL_VIDEO_WIDGET,
-      (leaf) => new VerticalVideoWidgetView(leaf)
+      (leaf) => new VerticalVideoWidgetView(leaf),
     );
 
     // Auto-activate the widget in the right sidebar
@@ -22,8 +23,8 @@ export default class VerticalVideoPlugin extends Plugin {
 
     // Add command to toggle the dynamic widget
     this.addCommand({
-      id: 'open-dynamic-widget',
-      name: 'Open Dynamic Widget',
+      id: "open-dynamic-widget",
+      name: "Open Dynamic Widget",
       callback: () => {
         this.activateView();
       },
@@ -36,7 +37,9 @@ export default class VerticalVideoPlugin extends Plugin {
 
     // Create and activate the view in right sidebar
     const leaf = this.app.workspace.getRightLeaf(false);
-    if (!leaf) return;
+    if (!leaf) {
+      return;
+    }
 
     await leaf.setViewState({
       type: VIEW_TYPE_VERTICAL_VIDEO_WIDGET,
@@ -45,7 +48,7 @@ export default class VerticalVideoPlugin extends Plugin {
 
     // Ensure the view is visible
     const leaves = this.app.workspace.getLeavesOfType(
-      VIEW_TYPE_VERTICAL_VIDEO_WIDGET
+      VIEW_TYPE_VERTICAL_VIDEO_WIDGET,
     );
     if (leaves.length > 0) {
       this.app.workspace.revealLeaf(leaves[0]);
