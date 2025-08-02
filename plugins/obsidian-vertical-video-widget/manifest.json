@@ -1,11 +1,11 @@
 {
-	"id": "vertical-video-plugin",
-	"name": "Vertical Video Widget",
-	"version": "1.0.0",
-	"minAppVersion": "0.15.0",
-	"description": "Ability to embed a vertical video in a widget.",
-	"author": "Josh Medeski",
-	"authorUrl": "https://www.joshmedeski.com",
-	"fundingUrl": "https://www.joshmedeski.com/support",
-	"isDesktopOnly": true
+  "id": "vertical-video-plugin",
+  "name": "Vertical Video Widget",
+  "version": "1.0.0",
+  "minAppVersion": "0.15.0",
+  "description": "Ability to embed a vertical video in a widget.",
+  "author": "Josh Medeski",
+  "authorUrl": "https://www.joshmedeski.com",
+  "fundingUrl": "https://www.joshmedeski.com/support",
+  "isDesktopOnly": true
 }
