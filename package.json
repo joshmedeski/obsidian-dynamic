@@ -1,0 +1,19 @@
+{
+  "name": "obsidian-dynamic",
+  "description": "A collection of Obsidian plugins that create a more dynamic and interactive experience.",
+  "version": "1.0.0",
+  "author": "Josh Medeski",
+  "license": "MIT",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/joshmedeski/obsidian-dynamic"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "plugins/*",
+    "templates/*",
+    "vaults/*"
+  ]
+}
