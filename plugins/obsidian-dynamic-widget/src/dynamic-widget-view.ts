@@ -1,55 +1,55 @@
-import { ItemView, type TFile } from "obsidian";
+import { ItemView, type TFile } from 'obsidian';
 
-export const VIEW_TYPE_DYNAMIC_WIDGET = "dynamic-widget-view";
+export const VIEW_TYPE_DYNAMIC_WIDGET = 'dynamic-widget-view';
 const dayFileNameRegex = /^\d{4}-\d{2}-\d{2}$/;
 
 const ORDERED_FOLDER_NAMES = [
-  "Inbox 📥",
-  "Goals 🎯",
-  "Growth Edges 🌱",
-  "Projects 🏔️/Active ✅",
-  "Projects 🏔️/Waiting For ⏳",
-  "Projects 🏔️/Upcoming 🔮",
-  "Projects 🏔️/Ideas 💡",
-  "Projects 🏔️/Incubating 🌱",
-  "Projects 🏔️/Backlog 🗃️",
-  "Relationships 👥",
-  "Resources 🛠️",
-  "Archives 📦",
+  'Inbox 📥',
+  'Goals 🎯',
+  'Growth Edges 🌱',
+  'Projects 🏔️/Active ✅',
+  'Projects 🏔️/Waiting For ⏳',
+  'Projects 🏔️/Upcoming 🔮',
+  'Projects 🏔️/Ideas 💡',
+  'Projects 🏔️/Incubating 🌱',
+  'Projects 🏔️/Backlog 🗃️',
+  'Relationships 👥',
+  'Resources 🛠️',
+  'Archives 📦',
 ];
 
 const DAILY_FOLDERS = [
-  "Inbox 📥",
-  "Projects 🏔️/Active ✅",
-  "Projects 🏔️/Waiting For ⏳",
+  'Inbox 📥',
+  'Projects 🏔️/Active ✅',
+  'Projects 🏔️/Waiting For ⏳',
 ];
 
 type FilesByFolder = { folder: string; files: TFile[] }[];
 
 export class DynamicWidgetView extends ItemView {
-  contentEl: HTMLElement = document.createElement("div");
+  contentEl: HTMLElement = document.createElement('div');
 
   getViewType(): string {
     return VIEW_TYPE_DYNAMIC_WIDGET;
   }
 
   getDisplayText(): string {
-    return "Dynamic Widget";
+    return 'Dynamic Widget';
   }
 
   getIcon(): string {
-    return "activity";
+    return 'activity';
   }
 
   private makeUlLinkListWithTitle(
     title: string,
-    list: TFile[] | undefined,
+    list: TFile[] | undefined
   ): Element {
     if (!list || list.length === 0) {
-      return document.createElement("div");
+      return document.createElement('div');
     }
-    const sectionEl = document.createElement("section");
-    sectionEl.createEl("h4", { text: title });
+    const sectionEl = document.createElement('section');
+    sectionEl.createEl('h4', { text: title });
     const ulEl = this.makeUlLinkList(list);
     sectionEl.appendChild(ulEl);
     return sectionEl;
@@ -57,37 +57,37 @@ export class DynamicWidgetView extends ItemView {
 
   private makeUlLinkList(list: TFile[] | undefined): Element {
     if (!list || list.length === 0) {
-      return document.createElement("div");
+      return document.createElement('div');
     }
-    const ulEl = document.createElement("ul");
+    const ulEl = document.createElement('ul');
     const activeFile = this.app.workspace.getActiveFile();
 
     // Add emoji bullet class
-    ulEl.classList.add("emoji-bullet-list");
+    ulEl.classList.add('emoji-bullet-list');
 
     const liEls = list.map((project) => {
-      const projectEl = document.createElement("li");
+      const projectEl = document.createElement('li');
 
       // Extract emoji from the file's path
       const emoji = this.getEmojiForFilePath(project.path);
-      projectEl.style.setProperty("--emoji-bullet", `"${emoji}"`);
-      projectEl.classList.add("emoji-bullet-item");
+      projectEl.style.setProperty('--emoji-bullet', `"${emoji}"`);
+      projectEl.classList.add('emoji-bullet-item');
 
       if (activeFile && activeFile.path === project.path) {
-        projectEl.createEl("span", {
+        projectEl.createEl('span', {
           text: project.basename,
-          cls: "dynamic-widget-active-file",
+          cls: 'dynamic-widget-active-file',
         });
         return projectEl;
       }
 
       const metadata = this.app.metadataCache.getFileCache(project);
-      const linkEl = projectEl.createEl("a", {
+      const linkEl = projectEl.createEl('a', {
         text: metadata?.frontmatter?.title || project.basename,
       });
-      linkEl.addEventListener("click", (event) => {
+      linkEl.addEventListener('click', (event) => {
         event.preventDefault();
-        this.app.workspace.getLeaf("tab").openFile(project);
+        this.app.workspace.getLeaf('tab').openFile(project);
       });
       return projectEl;
     });
@@ -102,7 +102,7 @@ export class DynamicWidgetView extends ItemView {
     for (const folder of folders) {
       const files = allFiles
         .filter(
-          (file) => file.path.startsWith(folder) && file.extension === "md",
+          (file) => file.path.startsWith(folder) && file.extension === 'md'
         )
         .sort((a, b) => b.stat.mtime - a.stat.mtime);
       if (files) {
@@ -112,14 +112,14 @@ export class DynamicWidgetView extends ItemView {
     return notesByFolder;
   }
 
-  private simplifyWikiLink = (link: string) => link.replace(/\[\[|\]\]/g, "");
+  private simplifyWikiLink = (link: string) => link.replace(/\[\[|\]\]/g, '');
 
   private extractEmojiFromFolderName(folderName: string): string {
     // Extract emoji from folder names like "Inbox 📥" or "Projects 🏔️/Active ✅"
     // This regex matches complete emoji sequences including variation selectors
     const emojiRegex = /[\p{Emoji_Presentation}\p{Emoji}\uFE0F\u200D]+/gu;
     const matches = folderName.match(emojiRegex);
-    const fallbackEmoji = "•"; // Default bullet if no emoji found
+    const fallbackEmoji = '•'; // Default bullet if no emoji found
     if (matches && matches.length > 0) {
       // Return the last emoji found
       const lastEmoji = matches.at(-1);
@@ -131,7 +131,7 @@ export class DynamicWidgetView extends ItemView {
   private getEmojiForFilePath(filePath: string): string {
     // First, try to find the matching folder from the predefined list
     const matchingFolder = ORDERED_FOLDER_NAMES.find((folder) =>
-      filePath.startsWith(folder),
+      filePath.startsWith(folder)
     );
 
     if (matchingFolder) {
@@ -139,15 +139,15 @@ export class DynamicWidgetView extends ItemView {
     }
 
     // If no predefined folder matches, extract emoji from the immediate parent folder
-    const pathParts = filePath.split("/");
+    const pathParts = filePath.split('/');
     if (pathParts.length > 1) {
       // For files like "Periodic 🌄/Days 🌄/2025-07-15.md", use the immediate parent folder
       const parentFolder = pathParts.at(-2);
       if (!parentFolder) {
-        return "•"; // Fallback if no parent folder
+        return '•'; // Fallback if no parent folder
       }
       const emoji = this.extractEmojiFromFolderName(parentFolder);
-      if (emoji !== "•") {
+      if (emoji !== '•') {
         return emoji;
       }
     }
@@ -156,17 +156,17 @@ export class DynamicWidgetView extends ItemView {
     if (pathParts.length > 0) {
       const rootFolder = pathParts[0];
       const emoji = this.extractEmojiFromFolderName(rootFolder);
-      if (emoji !== "•") {
+      if (emoji !== '•') {
         return emoji;
       }
     }
 
     // Fallback: return a default bullet
-    return "•";
+    return '•';
   }
 
   private normalizeAreasFrontmatter(areas: string | string[]): string[] {
-    return typeof areas === "string" ? [areas] : areas;
+    return typeof areas === 'string' ? [areas] : areas;
   }
 
   private getFilesByArea(area: string): TFile[] {
@@ -174,7 +174,7 @@ export class DynamicWidgetView extends ItemView {
       const metadata = this.app.metadataCache.getFileCache(file);
 
       const fileAreas: string[] | undefined = this.normalizeAreasFrontmatter(
-        metadata?.frontmatter?.areas,
+        metadata?.frontmatter?.areas
       );
       if (!fileAreas?.length) {
         return false;
@@ -191,7 +191,7 @@ export class DynamicWidgetView extends ItemView {
       .filter((file) => {
         const fileDate = new Date(file.stat.ctime);
         return (
-          file.extension === "md" &&
+          file.extension === 'md' &&
           fileDate.getFullYear() === date.getFullYear() &&
           fileDate.getMonth() === date.getMonth() &&
           fileDate.getDate() === date.getDate()
@@ -203,7 +203,7 @@ export class DynamicWidgetView extends ItemView {
         );
       });
 
-    const newFiles = this.makeUlLinkListWithTitle("Created", files);
+    const newFiles = this.makeUlLinkListWithTitle('Created', files);
     this.contentEl.appendChild(newFiles);
   }
 
@@ -213,7 +213,7 @@ export class DynamicWidgetView extends ItemView {
       .filter((file) => {
         const fileDate = new Date(file.stat.mtime);
         return (
-          file.extension === "md" &&
+          file.extension === 'md' &&
           fileDate.getFullYear() === date.getFullYear() &&
           fileDate.getMonth() === date.getMonth() &&
           fileDate.getDate() === date.getDate()
@@ -225,7 +225,7 @@ export class DynamicWidgetView extends ItemView {
         );
       });
 
-    const newFiles = this.makeUlLinkListWithTitle("Modified", files);
+    const newFiles = this.makeUlLinkListWithTitle('Modified', files);
     this.contentEl.appendChild(newFiles);
   }
 
@@ -233,11 +233,11 @@ export class DynamicWidgetView extends ItemView {
   async onOpen(): Promise<void> {
     const container = this.containerEl.children[1];
     container.empty();
-    container.addClass("dynamic-widget-container");
+    container.addClass('dynamic-widget-container');
 
     // Create and store reference to content container
-    this.contentEl = container.createEl("div", {
-      cls: "dynamic-widget-content",
+    this.contentEl = container.createEl('div', {
+      cls: 'dynamic-widget-content',
     });
 
     // Initial content update
@@ -245,24 +245,24 @@ export class DynamicWidgetView extends ItemView {
 
     // Listen for active file changes
     this.registerEvent(
-      this.app.workspace.on("active-leaf-change", () => {
+      this.app.workspace.on('active-leaf-change', () => {
         this.updateContent();
-      }),
+      })
     );
 
     // Listen for file modifications
     this.registerEvent(
-      this.app.metadataCache.on("changed", (file: TFile) => {
+      this.app.metadataCache.on('changed', (file: TFile) => {
         const activeFile = this.app.workspace.getActiveFile();
         if (activeFile && activeFile.path === file.path) {
           this.updateContent();
         }
-      }),
+      })
     );
 
     // Listen for file movements/renames
     this.registerEvent(
-      this.app.vault.on("rename", (file: TFile) => {
+      this.app.vault.on('rename', (file: TFile) => {
         const activeFile = this.app.workspace.getActiveFile();
 
         // If the currently active file was moved, always update
@@ -281,19 +281,19 @@ export class DynamicWidgetView extends ItemView {
             // Update if the moved file shares the same area
             if (
               movedFileArea &&
-              movedFileArea.replace(/\[\[|\]\]/g, "") ===
-                currentArea.replace(/\[\[|\]\]/g, "")
+              movedFileArea.replace(/\[\[|\]\]/g, '') ===
+                currentArea.replace(/\[\[|\]\]/g, '')
             ) {
               this.updateContent();
             }
           }
         }
-      }),
+      })
     );
 
     // Listen for file deletions
     this.registerEvent(
-      this.app.vault.on("delete", () => {
+      this.app.vault.on('delete', () => {
         // Update when any file with the same area is deleted
         const activeFile = this.app.workspace.getActiveFile();
         if (activeFile) {
@@ -305,55 +305,55 @@ export class DynamicWidgetView extends ItemView {
             this.updateContent();
           }
         }
-      }),
+      })
     );
   }
 
   private determineActiveFileType(
-    activeFile: TFile | null,
-  ): "areas" | "day" | "other" {
+    activeFile: TFile | null
+  ): 'areas' | 'day' | 'other' {
     if (!activeFile) {
-      return "other";
+      return 'other';
     }
     const metadata = this.app.metadataCache.getFileCache(activeFile);
     if (metadata?.frontmatter?.areas) {
-      return "areas";
+      return 'areas';
     }
     if (activeFile.basename.match(dayFileNameRegex)) {
-      return "day";
+      return 'day';
     }
-    return "other";
+    return 'other';
   }
 
   private renderAreasContent(activeFile: TFile): void {
     const metadata = this.app.metadataCache.getFileCache(activeFile);
     // TODO: add zod validator
     const areasFrontmatter = this.normalizeAreasFrontmatter(
-      metadata?.frontmatter?.areas,
+      metadata?.frontmatter?.areas
     );
     const areasFiles: TFile[] = [];
     if (areasFrontmatter && areasFrontmatter.length > 0) {
       const areas: string[] = areasFrontmatter.map(this.simplifyWikiLink);
-      const areasHeaderEl = this.contentEl.createEl("div", {
-        cls: "areas-header",
+      const areasHeaderEl = this.contentEl.createEl('div', {
+        cls: 'areas-header',
       });
-      areasHeaderEl.style.display = "flex";
-      areasHeaderEl.style.flexWrap = "wrap";
-      areasHeaderEl.style.gap = "10px";
+      areasHeaderEl.style.display = 'flex';
+      areasHeaderEl.style.flexWrap = 'wrap';
+      areasHeaderEl.style.gap = '10px';
 
       for (const area of areas) {
-        areasHeaderEl.createEl("h2", { text: area });
+        areasHeaderEl.createEl('h2', { text: area });
         const areaFiles = this.getFilesByArea(area);
         areasFiles.push(...areaFiles);
       }
       const uniqueFiles = Array.from(
-        new Map(areasFiles.map((file) => [file.path, file])).values(),
+        new Map(areasFiles.map((file) => [file.path, file])).values()
       );
       const folders = this.filesByFolders(uniqueFiles, ORDERED_FOLDER_NAMES);
       for (const folder of folders) {
         const areaSection = this.makeUlLinkListWithTitle(
           folder.folder,
-          folder.files,
+          folder.files
         );
         if (areaSection) {
           this.contentEl.appendChild(areaSection);
@@ -373,14 +373,14 @@ export class DynamicWidgetView extends ItemView {
       return;
     }
 
-    const [year, month, day] = basename.split("-").map(Number);
+    const [year, month, day] = basename.split('-').map(Number);
     const date = new Date(year, month - 1, day); // month is 0-indexed
-    this.contentEl.createEl("h2", {
-      text: date.toLocaleDateString("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        year: "numeric",
+    this.contentEl.createEl('h2', {
+      text: date.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
       }),
     });
 
@@ -389,7 +389,7 @@ export class DynamicWidgetView extends ItemView {
     for (const folder of folders) {
       const areaSection = this.makeUlLinkListWithTitle(
         folder.folder,
-        folder.files,
+        folder.files
       );
       if (areaSection) {
         this.contentEl.appendChild(areaSection);
@@ -408,8 +408,8 @@ export class DynamicWidgetView extends ItemView {
 
     const activeFile = this.app.workspace.getActiveFile();
     if (!activeFile) {
-      this.contentEl.createEl("p", {
-        text: "No file is currently active",
+      this.contentEl.createEl('p', {
+        text: 'No file is currently active',
       });
       return;
     }
@@ -421,14 +421,14 @@ export class DynamicWidgetView extends ItemView {
     // If no wallpaper property, check the first area file's wallpaper
     if (!wallpaper && metadata?.frontmatter?.areas) {
       const areasFrontmatter = this.normalizeAreasFrontmatter(
-        metadata.frontmatter.areas,
+        metadata.frontmatter.areas
       );
       if (areasFrontmatter && areasFrontmatter.length > 0) {
         const firstArea = this.simplifyWikiLink(areasFrontmatter[0]);
         // Find the area file itself (not files that belong to the area)
         const areaFile = this.app.metadataCache.getFirstLinkpathDest(
           firstArea,
-          activeFile.path,
+          activeFile.path
         );
         if (areaFile) {
           const areaFileMetadata =
@@ -440,40 +440,40 @@ export class DynamicWidgetView extends ItemView {
 
     if (wallpaper) {
       // Strip wiki link brackets if present
-      const cleanWallpaper = wallpaper.replace(/\[\[|\]\]/g, "");
+      const cleanWallpaper = wallpaper.replace(/\[\[|\]\]/g, '');
       // Resolve attachment to get the app:// URL
       const wallpaperFile = this.app.metadataCache.getFirstLinkpathDest(
         cleanWallpaper,
-        activeFile.path,
+        activeFile.path
       );
       if (wallpaperFile) {
         const wallpaperUrl = this.app.vault.getResourcePath(wallpaperFile);
         document.body.style.setProperty(
-          "--background-image",
-          `url("${wallpaperUrl}")`,
+          '--background-image',
+          `url("${wallpaperUrl}")`
         );
       } else {
         // Fallback to original value if not found as attachment
         document.body.style.setProperty(
-          "--background-image",
-          `url("${cleanWallpaper}")`,
+          '--background-image',
+          `url("${cleanWallpaper}")`
         );
       }
     } else {
-      document.body.style.removeProperty("--background-image");
+      document.body.style.removeProperty('--background-image');
     }
 
     const activeFileType = this.determineActiveFileType(activeFile);
     switch (activeFileType) {
-      case "areas":
+      case 'areas':
         this.renderAreasContent(activeFile);
         break;
-      case "day":
+      case 'day':
         this.renderDateContent();
         break;
       default:
-        this.contentEl.createEl("p", {
-          text: "Other",
+        this.contentEl.createEl('p', {
+          text: 'Other',
         });
         break;
     }
@@ -481,6 +481,6 @@ export class DynamicWidgetView extends ItemView {
 
   // biome-ignore lint/suspicious/useAwait: Obsidian's API requires this to be async
   async onClose() {
-    this.contentEl = document.createElement("div");
+    this.contentEl = document.createElement('div');
   }
 }

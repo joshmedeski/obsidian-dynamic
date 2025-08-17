@@ -66,3 +66,7 @@
   font-weight: 600;
   color: var(--text-accent);
 }
+
+.areas-header h2 {
+  margin: 0;
+}

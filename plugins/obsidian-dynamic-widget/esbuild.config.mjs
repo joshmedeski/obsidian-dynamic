@@ -1,3 +1,4 @@
+import { copyFileSync, mkdirSync } from "node:fs";
 import process from "node:process";
 import builtins from "builtin-modules";
 import esbuild from "esbuild";
@@ -8,12 +9,15 @@ if you want to view the source, please visit the github repository of this plugi
 */
 `;
 
+mkdirSync("./build", { recursive: true });
+
+copyFileSync("./manifest.json", "./build/manifest.json");
+copyFileSync("./styles.css", "./build/styles.css");
+
 const prod = process.argv[2] === "production";
 
 const context = await esbuild.context({
-  banner: {
-    js: banner,
-  },
+  banner: { js: banner },
   entryPoints: ["./src/main.ts"],
   bundle: true,
   external: [
@@ -37,7 +41,7 @@ const context = await esbuild.context({
   logLevel: "info",
   sourcemap: prod ? false : "inline",
   treeShaking: true,
-  outfile: "main.js",
+  outfile: "./build/main.js",
   minify: prod,
 });
 
