@@ -5,7 +5,7 @@ import {
   VIEW_TYPE_DYNAMIC_WIDGET,
 } from "./dynamic-widget-view";
 
-export default class DynamicWidget extends Plugin {
+export default class DynamicWidgetPlugin extends Plugin {
   // biome-ignore lint/suspicious/useAwait: Obsidian's API requires this to be async
   async onload() {
     // Register the dynamic widget view
@@ -14,6 +14,7 @@ export default class DynamicWidget extends Plugin {
       (leaf) => new DynamicWidgetView(leaf),
     );
 
+    // FIX: this is currently causing a new view item every time the plugin is reloaded
     // Auto-activate the widget in the right sidebar
     // this.app.workspace.onLayoutReady(async () => {
     // 	const leaf = this.app.workspace.getLeftLeaf(false);
