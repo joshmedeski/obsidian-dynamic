@@ -1,0 +1,17 @@
+{
+  "name": "obsidian-dynamic-wallpaper-plugin",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "builtin-modules": "catalog:",
+    "esbuild": "catalog:",
+    "obsidian": "catalog:",
+    "tslib": "catalog:",
+    "typescript": "catalog:"
+  }
+}
