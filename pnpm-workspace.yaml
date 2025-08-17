@@ -1,0 +1,18 @@
+packages:
+  - apps/*
+  - packages/*
+  - plugins/*
+  - templates/*
+  - themes/*
+
+catalog:
+  '@types/node': 20.19.4
+  builtin-modules: ^5.0.0
+  esbuild: ^0.25.9
+  obsidian: latest
+  tslib: ^2.8.1
+  typescript: ^5.9.2
+
+onlyBuiltDependencies:
+  - esbuild
+  - lefthook
