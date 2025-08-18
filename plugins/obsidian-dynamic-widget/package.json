@@ -1,9 +1,6 @@
 {
   "name": "obsidian-dynamic-widget",
-  "description": "A plugin for Obsidian that allows you to create dynamic widgets in your notes.",
-  "version": "1.0.0",
   "private": true,
-  "license": "private",
   "scripts": {
     "build": "vite build --mode production",
     "dev": "vite build --watch --mode development"

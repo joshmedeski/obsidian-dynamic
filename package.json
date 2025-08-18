@@ -1,19 +1,10 @@
 {
   "name": "obsidian-dynamic",
-  "description": "A collection of Obsidian plugins that create a more dynamic and interactive experience.",
-  "version": "1.0.0",
-  "author": "Josh Medeski",
-  "license": "MIT",
   "private": true,
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/joshmedeski/obsidian-dynamic"
-  },
-  "packageManager": "pnpm@10.14.0",
   "scripts": {
     "build": "turbo run build",
-    "format": "npx ultracite@latest format",
-    "lint": "npx ultracite@latest lint"
+    "format": "ultracite format",
+    "lint": "ultracite lint"
   },
   "dependencies": {
     "turbo": "^2.5.6"
@@ -24,9 +15,10 @@
     "lint-staged": "^16.1.5",
     "ultracite": "^5.2.4"
   },
+  "packageManager": "pnpm@10.14.0",
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}": [
-      "npx ultracite format"
+      "ultracite format"
     ]
   }
 }

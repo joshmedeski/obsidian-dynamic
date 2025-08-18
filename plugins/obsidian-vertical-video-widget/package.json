@@ -1,7 +1,6 @@
 {
   "name": "obsidian-vertical-video-widget",
   "private": true,
-  "version": "1.0.0",
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production"

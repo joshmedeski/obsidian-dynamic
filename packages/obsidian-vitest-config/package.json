@@ -1,18 +1,11 @@
 {
   "name": "obsidian-vite-config",
-  "version": "1.0.0",
-  "description": "A Vitest configuration for an Obsidian plugin.",
+  "private": true,
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "scripts": {
     "build": "tsc"
   },
-  "keywords": [
-    "vite",
-    "obsidian"
-  ],
-  "author": "Josh Medeski",
-  "license": "MIT",
   "devDependencies": {
     "@types/node": "catalog:",
     "builtin-modules": "catalog:",
