@@ -1,9 +1,9 @@
-import { Plugin } from "obsidian";
+import { Plugin } from 'obsidian';
 
 import {
   DynamicWidgetView,
   VIEW_TYPE_DYNAMIC_WIDGET,
-} from "./dynamic-widget-view";
+} from './dynamic-widget-view';
 
 export default class DynamicWidgetPlugin extends Plugin {
   // biome-ignore lint/suspicious/useAwait: Obsidian's API requires this to be async
@@ -11,7 +11,7 @@ export default class DynamicWidgetPlugin extends Plugin {
     // Register the dynamic widget view
     this.registerView(
       VIEW_TYPE_DYNAMIC_WIDGET,
-      (leaf) => new DynamicWidgetView(leaf),
+      (leaf) => new DynamicWidgetView(leaf)
     );
 
     // FIX: this is currently causing a new view item every time the plugin is reloaded
@@ -25,8 +25,8 @@ export default class DynamicWidgetPlugin extends Plugin {
 
     // Add command to toggle the dynamic widget
     this.addCommand({
-      id: "open-dynamic-widget",
-      name: "Open Dynamic Widget",
+      id: 'open-dynamic-widget',
+      name: 'Open Dynamic Widget',
       callback: () => {
         this.activateView();
       },

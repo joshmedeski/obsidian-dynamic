@@ -1,7 +1,7 @@
 {
-	"name": "Dynamic",
-	"version": "1.0.0",
-	"minAppVersion": "1.0.0",
-	"author": "Josh Medeski",
-	"authorUrl": "https://www.joshmedeski.com/"
+  "name": "Dynamic",
+  "version": "1.0.0",
+  "minAppVersion": "1.0.0",
+  "author": "Josh Medeski",
+  "authorUrl": "https://www.joshmedeski.com/"
 }

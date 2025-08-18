@@ -1,37 +1,37 @@
 body {
-	--background-overlay: rgba(255, 255, 255, 0.9);
-	--overlay-background: rgba(255, 255, 255, 0.7);
+  --background-overlay: rgba(255, 255, 255, 0.9);
+  --overlay-background: rgba(255, 255, 255, 0.7);
 
-	--modal-background: var(--overlay-background);
-	--menu-background: var(--overlay-background);
-	--prompt-background: var(--overlay-background);
-	--popover-background: var(--overlay-background);
+  --modal-background: var(--overlay-background);
+  --menu-background: var(--overlay-background);
+  --prompt-background: var(--overlay-background);
+  --popover-background: var(--overlay-background);
 
-	--background-image: none;
-	--background-primary: transparent;
-	--background-primary-position: center top;
-	--background-primary-repeat: no-repeat;
-	--background-primary-size: cover;
+  --background-image: none;
+  --background-primary: transparent;
+  --background-primary-position: center top;
+  --background-primary-repeat: no-repeat;
+  --background-primary-size: cover;
 
-	--background-secondary: transparent;
-	--background-secondary-alt: transparent;
-	--tab-container-background: transparent;
-	--titlebar-background-focused: transparent;
+  --background-secondary: transparent;
+  --background-secondary-alt: transparent;
+  --tab-container-background: transparent;
+  --titlebar-background-focused: transparent;
 
-	--divider-color: rgba(0, 0, 0, 0);
-	--file-header-justify: left;
+  --divider-color: rgba(0, 0, 0, 0);
+  --file-header-justify: left;
 }
 
 @media (prefers-color-scheme: dark) {
-	body {
-		--background-overlay: var(--overlay-background);
-		--overlay-background: rgba(0, 0, 0, 0.9);
-		--divider-color: rgba(255, 255, 255, 0);
-	}
+  body {
+    --background-overlay: var(--overlay-background);
+    --overlay-background: rgba(0, 0, 0, 0.9);
+    --divider-color: rgba(255, 255, 255, 0);
+  }
 }
 
 .app-container {
-	background-color: var(--background-overlay);
+  background-color: var(--background-overlay);
 }
 
 /** Main Content **/
@@ -69,19 +69,19 @@ body {
 .suggestion-container,
 .suggestion-container.mod-search-suggestion,
 [role="dialog"] {
-	backdrop-filter: blur(4px);
-	background-color: var(--overlay-background);
+  backdrop-filter: blur(4px);
+  background-color: var(--overlay-background);
 }
 
 .view-header-left {
-	display: none;
+  display: none;
 }
 
 body,
 :root,
 [data-theme] {
-	background-image: var(--background-image);
-	background-position: var(--background-primary-position);
-	background-repeat: var(--background-primary-repeat);
-	background-size: var(--background-primary-size);
+  background-image: var(--background-image);
+  background-position: var(--background-primary-position);
+  background-repeat: var(--background-primary-repeat);
+  background-size: var(--background-primary-size);
 }

@@ -5,16 +5,15 @@
   "private": true,
   "license": "private",
   "scripts": {
-    "dev": "node esbuild.config.mjs",
-    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-    "version": "node version-bump.mjs && git add manifest.json versions.json"
+    "build": "vite build --mode production",
+    "dev": "vite build --watch --mode development"
   },
   "devDependencies": {
     "@types/node": "catalog:",
-    "builtin-modules": "catalog:",
-    "esbuild": "catalog:",
     "obsidian": "catalog:",
+    "obsidian-vite-config": "workspace:*",
     "tslib": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vite": "catalog:"
   }
 }
