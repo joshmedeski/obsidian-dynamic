@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Obsidian Theme Manifest",
+  "description": "Schema for Obsidian theme manifest.json files",
+  "type": "object",
+  "required": ["name", "version", "minAppVersion", "author"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Display name of the theme as shown in the UI",
+      "minLength": 1
+    },
+    "version": {
+      "type": "string",
+      "description": "Current version of the theme following semantic versioning",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "minAppVersion": {
+      "type": "string",
+      "description": "Minimum Obsidian version required for this theme",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "author": {
+      "type": "string",
+      "description": "Name of the theme author or organization",
+      "minLength": 1
+    },
+    "authorUrl": {
+      "type": "string",
+      "description": "URL to the author's website or profile",
+      "format": "uri"
+    },
+    "fundingUrl": {
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Single funding URL",
+          "format": "uri"
+        },
+        {
+          "type": "object",
+          "description": "Multiple funding options with display names",
+          "patternProperties": {
+            "^.+$": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "modes": {
+      "type": "array",
+      "description": "Supported color modes for the theme",
+      "items": {
+        "type": "string",
+        "enum": ["light", "dark"]
+      },
+      "uniqueItems": true,
+      "minItems": 1
+    }
+  },
+  "additionalProperties": false
+}
