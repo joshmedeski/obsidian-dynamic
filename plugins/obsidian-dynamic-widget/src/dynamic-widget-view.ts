@@ -65,29 +65,29 @@ export class DynamicWidgetView extends ItemView {
     // Add emoji bullet class
     ulEl.classList.add("emoji-bullet-list");
 
-    const liEls = list.map((project) => {
+    const liEls = list.map((note) => {
       const projectEl = document.createElement("li");
 
       // Extract emoji from the file's path
-      const emoji = this.getEmojiForFilePath(project.path);
+      const emoji = this.getEmojiForFilePath(note.path);
       projectEl.style.setProperty("--emoji-bullet", `"${emoji}"`);
       projectEl.classList.add("emoji-bullet-item");
 
-      if (activeFile && activeFile.path === project.path) {
+      if (activeFile && activeFile.path === note.path) {
         projectEl.createEl("span", {
-          text: project.basename,
+          text: note.basename,
           cls: "dynamic-widget-active-file",
         });
         return projectEl;
       }
 
-      const metadata = this.app.metadataCache.getFileCache(project);
+      const metadata = this.app.metadataCache.getFileCache(note);
       const linkEl = projectEl.createEl("a", {
-        text: metadata?.frontmatter?.title || project.basename,
+        text: metadata?.frontmatter?.title || note.basename,
       });
       linkEl.addEventListener("click", (event) => {
         event.preventDefault();
-        this.app.workspace.getLeaf("tab").openFile(project);
+        this.app.workspace.getLeaf("tab").openFile(note);
       });
       return projectEl;
     });
@@ -328,7 +328,31 @@ export class DynamicWidgetView extends ItemView {
 
   private renderAreasContent(activeFile: TFile): void {
     const metadata = this.app.metadataCache.getFileCache(activeFile);
-    // TODO: add zod validator
+
+    const cover = metadata?.frontmatter?.cover;
+    if (cover) {
+      // Strip wiki link brackets if present
+      const cleanCover = cover.replace(/\[\[|\]\]/g, "");
+
+      const coverFile = this.app.metadataCache.getFirstLinkpathDest(
+        cleanCover,
+        activeFile.path,
+      );
+
+      if (coverFile) {
+        const coverUrl = this.app.vault.getResourcePath(coverFile);
+
+        const imgEl = this.contentEl.createEl("img", {
+          cls: "area-cover-image",
+          attr: { src: coverUrl, alt: "Cover image" },
+        });
+        imgEl.style.maxWidth = "100%";
+        imgEl.style.borderRadius = "8px";
+        imgEl.style.marginBottom = "10px";
+        this.contentEl.appendChild(imgEl);
+      }
+    }
+
     const areasFrontmatter = this.normalizeAreasFrontmatter(
       metadata?.frontmatter?.areas,
     );
