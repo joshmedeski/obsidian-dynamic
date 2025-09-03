@@ -1,5 +1,5 @@
 body {
-  --background-overlay: rgba(255, 255, 255, 0.9);
+  --background-overlay: rgba(255, 255, 255, 0.8);
   --overlay-background: rgba(255, 255, 255, 0.7);
 
   --modal-background: var(--overlay-background);
@@ -20,13 +20,20 @@ body {
 
   --divider-color: rgba(0, 0, 0, 0);
   --file-header-justify: left;
+
+  --vault-profile-display: none;
+  --tab-text-color-focused-active-current: var(--color-accent);
+  --checkbox-marker-color: black;
+
+  --code-background: rgba(255, 255, 255, 0.3);
 }
 
 @media (prefers-color-scheme: dark) {
   body {
     --background-overlay: var(--overlay-background);
-    --overlay-background: rgba(0, 0, 0, 0.9);
+    --overlay-background: rgba(0, 0, 0, 0.8);
     --divider-color: rgba(255, 255, 255, 0);
+    --code-background: rgba(0, 0, 0, 0.3);
   }
 }
 
@@ -73,8 +80,39 @@ body {
   background-color: var(--overlay-background);
 }
 
-.view-header-left {
+.metadata-add-button,
+.view-header-left,
+.status-bar,
+.sidebar-toggle-button {
   display: none;
+}
+
+.view-actions {
+  visibility: hidden;
+}
+
+.view-hidden:hover {
+  visibility: visible;
+}
+
+.titlebar .workspace-tab-header-tab-list,
+.titlebar .workspace-tab-header-new-tab,
+.mod-root .workspace-tab-header-tab-list,
+.mod-root .workspace-tab-header-new-tab {
+  display: none;
+}
+
+.workspace-tab-header-tab-list:hover {
+  display: flex;
+}
+
+.view-header,
+.mod-root .workspace-tab-header-container-inner {
+  padding-left: 30px;
+}
+
+.workspace .mod-root .workspace-tab-header {
+  padding-left: 0;
 }
 
 body,
@@ -84,4 +122,5 @@ body,
   background-position: var(--background-primary-position);
   background-repeat: var(--background-primary-repeat);
   background-size: var(--background-primary-size);
+  --checkbox-marker-color: white;
 }
