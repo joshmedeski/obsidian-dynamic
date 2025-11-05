@@ -3,28 +3,26 @@ import { ItemView, type TFile } from "obsidian";
 export const VIEW_TYPE_DYNAMIC_WIDGET = "dynamic-widget-view";
 const dayFileNameRegex = /^\d{4}-\d{2}-\d{2}$/;
 
+type FolderWithTitle = { folder: string; title: string };
+
 const ORDERED_FOLDER_NAMES = [
-  "Inbox 📥",
-  "Goals 🎯",
-  "Growth Edges 🌱",
-  "Projects 🏔️/Active ✅",
-  "Projects 🏔️/Waiting For ⏳",
-  "Projects 🏔️/Upcoming 🔮",
-  "Projects 🏔️/Ideas 💡",
-  "Projects 🏔️/Incubating 🌱",
-  "Projects 🏔️/Backlog 🗃️",
-  "Relationships 👥",
-  "Resources 🛠️",
-  "Archives 📦",
+  { folder: "Inbox", title: "📥 Inbox" },
+  { folder: "Goals", title: "🎯 Goals" },
+  { folder: "Projects/Active", title: "✅ Active Projects" },
+  { folder: "Projects/Waiting For", title: "⏳ Waiting For" },
+  { folder: "Projects/Backlog", title: "📋 Backlog" },
+  { folder: "Relationships", title: "👥 Relationships" },
+  { folder: "Resources", title: "📚 Resources" },
+  { folder: "Archives", title: "🗄️ Archives" },
 ];
 
 const DAILY_FOLDERS = [
-  "Inbox 📥",
-  "Projects 🏔️/Active ✅",
-  "Projects 🏔️/Waiting For ⏳",
+  { folder: "Inbox", title: "📥 Inbox" },
+  { folder: "Projects/Active", title: "✅ Active Projects" },
+  { folder: "Projects/Waiting For", title: "⏳ Waiting For" },
 ];
 
-type FilesByFolder = { folder: string; files: TFile[] }[];
+type FilesByFolder = { folder: FolderWithTitle; files: TFile[] }[];
 
 export class DynamicWidgetView extends ItemView {
   contentEl: HTMLElement = document.createElement("div");
@@ -49,7 +47,7 @@ export class DynamicWidgetView extends ItemView {
       return document.createElement("div");
     }
     const sectionEl = document.createElement("section");
-    sectionEl.createEl("h4", { text: title });
+    sectionEl.createEl("h3", { text: title });
     const ulEl = this.makeUlLinkList(list);
     sectionEl.appendChild(ulEl);
     return sectionEl;
@@ -68,23 +66,30 @@ export class DynamicWidgetView extends ItemView {
     const liEls = list.map((note) => {
       const projectEl = document.createElement("li");
 
-      // Extract emoji from the file's path
-      const emoji = this.getEmojiForFilePath(note.path);
-      projectEl.style.setProperty("--emoji-bullet", `"${emoji}"`);
-      projectEl.classList.add("emoji-bullet-item");
-
       if (activeFile && activeFile.path === note.path) {
         projectEl.createEl("span", {
-          text: note.basename,
+          text: `👉 ${note.basename}`,
           cls: "dynamic-widget-active-file",
         });
         return projectEl;
       }
 
       const metadata = this.app.metadataCache.getFileCache(note);
+
+      projectEl.classList.add("emoji-bullet-item");
+
+      // Extract emoji from the file's path
+      const emoji = metadata?.frontmatter?.icon;
+      if (emoji) {
+        projectEl.style.setProperty("--emoji-bullet", `"${emoji}"`);
+      } else {
+        projectEl.style.setProperty("--emoji-bullet", `👋`);
+      }
+
       const linkEl = projectEl.createEl("a", {
         text: metadata?.frontmatter?.title || note.basename,
       });
+
       linkEl.addEventListener("click", (event) => {
         event.preventDefault();
         this.app.workspace.getLeaf("tab").openFile(note);
@@ -97,16 +102,19 @@ export class DynamicWidgetView extends ItemView {
     return ulEl;
   }
 
-  private filesByFolders(allFiles: TFile[], folders: string[]): FilesByFolder {
+  private filesByFolders(
+    allFiles: TFile[],
+    folders: FolderWithTitle[],
+  ): FilesByFolder {
     const notesByFolder: FilesByFolder = [];
-    for (const folder of folders) {
+    for (const { folder, title } of folders) {
       const files = allFiles
         .filter(
           (file) => file.path.startsWith(folder) && file.extension === "md",
         )
         .sort((a, b) => b.stat.mtime - a.stat.mtime);
       if (files) {
-        notesByFolder.push({ folder, files });
+        notesByFolder.push({ folder: { folder, title }, files });
       }
     }
     return notesByFolder;
@@ -114,57 +122,6 @@ export class DynamicWidgetView extends ItemView {
 
   private readonly simplifyWikiLink = (link: string) =>
     link.replace(/\[\[|\]\]/g, "");
-
-  private extractEmojiFromFolderName(folderName: string): string {
-    // Extract emoji from folder names like "Inbox 📥" or "Projects 🏔️/Active ✅"
-    // This regex matches complete emoji sequences including variation selectors
-    const emojiRegex = /[\p{Emoji_Presentation}\p{Emoji}\uFE0F\u200D]+/gu;
-    const matches = folderName.match(emojiRegex);
-    const fallbackEmoji = "•"; // Default bullet if no emoji found
-    if (matches && matches.length > 0) {
-      // Return the last emoji found
-      const lastEmoji = matches.at(-1);
-      return lastEmoji || fallbackEmoji;
-    }
-    return fallbackEmoji;
-  }
-
-  private getEmojiForFilePath(filePath: string): string {
-    // First, try to find the matching folder from the predefined list
-    const matchingFolder = ORDERED_FOLDER_NAMES.find((folder) =>
-      filePath.startsWith(folder),
-    );
-
-    if (matchingFolder) {
-      return this.extractEmojiFromFolderName(matchingFolder);
-    }
-
-    // If no predefined folder matches, extract emoji from the immediate parent folder
-    const pathParts = filePath.split("/");
-    if (pathParts.length > 1) {
-      // For files like "Periodic 🌄/Days 🌄/2025-07-15.md", use the immediate parent folder
-      const parentFolder = pathParts.at(-2);
-      if (!parentFolder) {
-        return "•"; // Fallback if no parent folder
-      }
-      const emoji = this.extractEmojiFromFolderName(parentFolder);
-      if (emoji !== "•") {
-        return emoji;
-      }
-    }
-
-    // If still no emoji found, try the root folder
-    if (pathParts.length > 0) {
-      const rootFolder = pathParts[0];
-      const emoji = this.extractEmojiFromFolderName(rootFolder);
-      if (emoji !== "•") {
-        return emoji;
-      }
-    }
-
-    // Fallback: return a default bullet
-    return "•";
-  }
 
   private normalizeAreasFrontmatter(areas: string | string[]): string[] {
     return typeof areas === "string" ? [areas] : areas;
@@ -204,7 +161,7 @@ export class DynamicWidgetView extends ItemView {
         );
       });
 
-    const newFiles = this.makeUlLinkListWithTitle("Created", files);
+    const newFiles = this.makeUlLinkListWithTitle("🌱 Created", files);
     this.contentEl.appendChild(newFiles);
   }
 
@@ -226,7 +183,7 @@ export class DynamicWidgetView extends ItemView {
         );
       });
 
-    const newFiles = this.makeUlLinkListWithTitle("Modified", files);
+    const newFiles = this.makeUlLinkListWithTitle("🪴 Modified", files);
     this.contentEl.appendChild(newFiles);
   }
 
@@ -377,7 +334,7 @@ export class DynamicWidgetView extends ItemView {
       const folders = this.filesByFolders(uniqueFiles, ORDERED_FOLDER_NAMES);
       for (const folder of folders) {
         const areaSection = this.makeUlLinkListWithTitle(
-          folder.folder,
+          folder.folder.title,
           folder.files,
         );
         if (areaSection) {
@@ -413,7 +370,7 @@ export class DynamicWidgetView extends ItemView {
     const folders = this.filesByFolders(allFiles, DAILY_FOLDERS);
     for (const folder of folders) {
       const areaSection = this.makeUlLinkListWithTitle(
-        folder.folder,
+        folder.folder.title,
         folder.files,
       );
       if (areaSection) {

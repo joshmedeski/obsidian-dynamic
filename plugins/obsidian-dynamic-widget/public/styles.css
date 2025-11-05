@@ -5,6 +5,7 @@
   list-style: none;
   padding-left: 0;
   margin: 0;
+  /* font-size: var(--font-text-size); */
 }
 
 .emoji-bullet-item {
@@ -18,8 +19,8 @@
   position: absolute;
   left: 0;
   top: 0;
-  width: 1.2em;
-  font-size: 0.9em;
+  /* width: var(--font-text-size); */
+  /* font-size: var(--font-text-size); */
   line-height: 1.2;
 }
 
@@ -54,10 +55,8 @@
   margin-bottom: 1.5em;
 }
 
-.dynamic-widget-content section h4 {
+.dynamic-widget-content section h3 {
   margin-bottom: 0.5em;
-  color: var(--text-muted);
-  font-size: 0.9em;
   font-weight: 600;
 }
 
