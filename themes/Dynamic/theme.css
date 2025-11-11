@@ -1,11 +1,5 @@
 body {
-  --background-overlay: rgba(255, 255, 255, 0.8);
-  --overlay-background: rgba(255, 255, 255, 0.7);
-
-  --modal-background: var(--overlay-background);
-  --menu-background: var(--overlay-background);
-  --prompt-background: var(--overlay-background);
-  --popover-background: var(--overlay-background);
+  --transparent-background: rgba(255, 255, 255, 0.8);
 
   --background-image: none;
   --background-primary: transparent;
@@ -26,19 +20,21 @@ body {
   --checkbox-marker-color: black;
 
   --code-background: rgba(255, 255, 255, 0.3);
+
+  background-color: var(--transparent-background);
 }
 
 @media (prefers-color-scheme: dark) {
   body {
-    --background-overlay: var(--overlay-background);
-    --overlay-background: rgba(0, 0, 0, 0.8);
+    background: var(--transparent-background);
+    --transparent-background: rgba(0, 0, 0, 0.8);
     --divider-color: rgba(255, 255, 255, 0);
     --code-background: rgba(0, 0, 0, 0.3);
   }
 }
 
 .app-container {
-  background-color: var(--background-overlay);
+  background: var(--transparent-background);
 }
 
 /** Main Content **/
@@ -75,9 +71,10 @@ body {
 .graph-controls,
 .suggestion-container,
 .suggestion-container.mod-search-suggestion,
+.maplibregl-popup-content,
 [role="dialog"] {
   backdrop-filter: blur(4px);
-  background-color: var(--overlay-background);
+  background-color: var(--transparent-background);
 }
 
 .metadata-add-button,
