@@ -1,4 +1,5 @@
 {
+  "$schema": "../../schemas/obsidian-plugin-manifest-schema.json",
   "id": "vertical-video-plugin",
   "name": "Vertical Video Widget",
   "version": "1.0.0",
