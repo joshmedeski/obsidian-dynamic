@@ -298,15 +298,46 @@ export class DynamicWidgetView extends ItemView {
 
       if (coverFile) {
         const coverUrl = this.app.vault.getResourcePath(coverFile);
+        const fileExtension = coverFile.extension.toLowerCase();
 
-        const imgEl = this.contentEl.createEl("img", {
-          cls: "area-cover-image",
-          attr: { src: coverUrl, alt: "Cover image" },
-        });
-        imgEl.style.maxWidth = "100%";
-        imgEl.style.borderRadius = "8px";
-        imgEl.style.marginBottom = "10px";
-        this.contentEl.appendChild(imgEl);
+        // Define image and video extensions
+        const imageExtensions = [
+          "jpg",
+          "jpeg",
+          "png",
+          "gif",
+          "bmp",
+          "svg",
+          "webp",
+        ];
+        const videoExtensions = ["mp4", "webm", "ogg", "mov", "avi", "mkv"];
+
+        if (imageExtensions.includes(fileExtension)) {
+          // Create image element
+          const imgEl = this.contentEl.createEl("img", {
+            cls: "area-cover-image",
+            attr: { src: coverUrl, alt: "Cover image" },
+          });
+          imgEl.style.maxWidth = "100%";
+          imgEl.style.borderRadius = "8px";
+          imgEl.style.marginBottom = "10px";
+          this.contentEl.appendChild(imgEl);
+        } else if (videoExtensions.includes(fileExtension)) {
+          // Create video element
+          const videoEl = this.contentEl.createEl("video", {
+            cls: "area-cover-image",
+            attr: {
+              src: coverUrl,
+              autoplay: "",
+              muted: "",
+              alt: "Cover video",
+            },
+          });
+          videoEl.style.maxWidth = "100%";
+          videoEl.style.borderRadius = "8px";
+          videoEl.style.marginBottom = "10px";
+          this.contentEl.appendChild(videoEl);
+        }
       }
     }
 
