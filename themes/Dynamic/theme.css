@@ -121,3 +121,10 @@ body,
   background-size: var(--background-primary-size);
   --checkbox-marker-color: white;
 }
+
+/**
+* Callouts
+*/
+.cm-embed-block.cm-callout {
+  display: inline-display;
+}
