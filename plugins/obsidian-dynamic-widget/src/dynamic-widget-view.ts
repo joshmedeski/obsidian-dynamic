@@ -358,12 +358,12 @@ export class DynamicWidgetView extends ItemView {
     const [year, month, day] = basename.split("-").map(Number);
     const date = new Date(year, month - 1, day); // month is 0-indexed
     this.contentEl.createEl("h2", {
-      text: date.toLocaleDateString("en-US", {
+      text: `🌅 ${date.toLocaleDateString("en-US", {
         weekday: "short",
         month: "short",
         day: "numeric",
         year: "numeric",
-      }),
+      })}`,
     });
 
     const allFiles = this.app.vault.getFiles();
