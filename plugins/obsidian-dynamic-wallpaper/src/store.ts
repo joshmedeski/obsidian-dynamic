@@ -3,12 +3,14 @@ import type DynamicWallpaperPlugin from './main';
 
 export interface PluginSettings {
   defaultWallpaper: string;
+  wallpapersPath: string;
   overlayOpacityLight: number;
   overlayOpacityDark: number;
 }
 
 export const DEFAULT_SETTINGS: PluginSettings = {
   defaultWallpaper: 'default.jpg',
+  wallpapersPath: '/',
   overlayOpacityLight: 0.8,
   overlayOpacityDark: 0.6,
 };
