@@ -5,13 +5,13 @@ import {
   WorkspaceLeaf,
   PluginSettingTab,
   App,
-} from "obsidian";
-import { mount, unmount } from "svelte";
-import ExampleView from "./ExampleView.svelte";
-import SettingsTab from "./SettingsTab.svelte";
-import { DEFAULT_SETTINGS, type PluginSettings, initStore } from "./store";
+} from 'obsidian';
+import { mount, unmount } from 'svelte';
+import ExampleView from './ExampleView.svelte';
+import SettingsTab from './SettingsTab.svelte';
+import { DEFAULT_SETTINGS, type PluginSettings, initStore } from './store';
 
-const VIEW_TYPE_EXAMPLE = "example-view";
+const VIEW_TYPE_EXAMPLE = 'example-view';
 
 class ExampleSvelteView extends ItemView {
   component: any;
@@ -25,14 +25,14 @@ class ExampleSvelteView extends ItemView {
   }
 
   getDisplayText() {
-    return "Example Svelte View";
+    return 'Example Svelte View';
   }
 
   async onOpen() {
     this.component = mount(ExampleView, {
       target: this.contentEl,
       props: {
-        name: "Obsidian User",
+        name: 'Obsidian User',
       },
     });
   }
@@ -59,7 +59,9 @@ class DynamicWallpaperSettingTab extends PluginSettingTab {
 
     this.component = mount(SettingsTab, {
       target: containerEl,
-      props: {},
+      props: {
+        app: this.app,
+      },
     });
   }
 
@@ -71,11 +73,11 @@ class DynamicWallpaperSettingTab extends PluginSettingTab {
 }
 
 function normalizeAreasFrontmatter(areas: string | string[]): string[] {
-  return typeof areas === "string" ? [areas] : areas;
+  return typeof areas === 'string' ? [areas] : areas;
 }
 
 function simplifyWikiLink(link: string) {
-  return link.replace(/\[\[|\]\]/g, "");
+  return link.replace(/\[\[|\]\]/g, '');
 }
 
 export default class DynamicWallpaperPlugin extends Plugin {
@@ -89,7 +91,7 @@ export default class DynamicWallpaperPlugin extends Plugin {
 
     this.registerView(VIEW_TYPE_EXAMPLE, (leaf) => new ExampleSvelteView(leaf));
 
-    this.addRibbonIcon("dice", "Open Example View", () => {
+    this.addRibbonIcon('dice', 'Open Example View', () => {
       this.activateView();
     });
 
@@ -97,19 +99,19 @@ export default class DynamicWallpaperPlugin extends Plugin {
 
     // Listen for active file changes
     this.registerEvent(
-      this.app.workspace.on("active-leaf-change", () => {
+      this.app.workspace.on('active-leaf-change', () => {
         this.updateWallpaper();
-      }),
+      })
     );
 
     // Listen for file modifications
     this.registerEvent(
-      this.app.metadataCache.on("changed", (file: TFile) => {
+      this.app.metadataCache.on('changed', (file: TFile) => {
         const activeFile = this.app.workspace.getActiveFile();
         if (activeFile && activeFile.path === file.path) {
           this.updateWallpaper();
         }
-      }),
+      })
     );
   }
 
@@ -150,12 +152,12 @@ export default class DynamicWallpaperPlugin extends Plugin {
   private updateWallpaper() {
     // Update overlay opacity CSS variables
     document.body.style.setProperty(
-      "--background-overlay-opacity-light",
-      this.settings.overlayOpacityLight.toString(),
+      '--background-overlay-opacity-light',
+      this.settings.overlayOpacityLight.toString()
     );
     document.body.style.setProperty(
-      "--background-overlay-opacity-dark",
-      this.settings.overlayOpacityDark.toString(),
+      '--background-overlay-opacity-dark',
+      this.settings.overlayOpacityDark.toString()
     );
 
     const activeFile = this.app.workspace.getActiveFile();
@@ -166,7 +168,7 @@ export default class DynamicWallpaperPlugin extends Plugin {
 
     if (!wallpaper && metadata?.frontmatter?.areas) {
       const areasFrontmatter = normalizeAreasFrontmatter(
-        metadata.frontmatter.areas,
+        metadata.frontmatter.areas
       );
       if (areasFrontmatter && areasFrontmatter.length > 0) {
         for (const area of areasFrontmatter) {
@@ -174,7 +176,7 @@ export default class DynamicWallpaperPlugin extends Plugin {
           // Find the area file itself (not files that belong to the area)
           const areaFile = this.app.metadataCache.getFirstLinkpathDest(
             simplifiedArea,
-            activeFile.path,
+            activeFile.path
           );
           if (areaFile) {
             const areaFileMetadata =
@@ -190,54 +192,54 @@ export default class DynamicWallpaperPlugin extends Plugin {
 
     if (wallpaper) {
       // Strip wiki link brackets if present
-      const cleanWallpaper = wallpaper.replace(/\[\[|\]\]/g, "");
+      const cleanWallpaper = wallpaper.replace(/\[\[|\]\]/g, '');
 
       // Resolve attachment to get the app:// URL
       const wallpaperFile = this.app.metadataCache.getFirstLinkpathDest(
         cleanWallpaper,
-        activeFile.path,
+        activeFile.path
       );
 
       if (wallpaperFile) {
         const wallpaperUrl = this.app.vault.getResourcePath(wallpaperFile);
         document.body.style.setProperty(
-          "--background-image",
-          `url("${wallpaperUrl}")`,
+          '--background-image',
+          `url("${wallpaperUrl}")`
         );
       } else {
         // Fallback to original value if not found as attachment
         document.body.style.setProperty(
-          "--background-image",
-          `url("${cleanWallpaper}")`,
+          '--background-image',
+          `url("${cleanWallpaper}")`
         );
       }
     } else if (this.settings.defaultWallpaper) {
       // Use default wallpaper from settings
       const cleanWallpaper = this.settings.defaultWallpaper.replace(
         /\[\[|\]\]/g,
-        "",
+        ''
       );
       const wallpaperFile = this.app.metadataCache.getFirstLinkpathDest(
         cleanWallpaper,
-        activeFile.path,
+        activeFile.path
       );
 
       if (wallpaperFile) {
         const wallpaperUrl = this.app.vault.getResourcePath(wallpaperFile);
         document.body.style.setProperty(
-          "--background-image",
-          `url("${wallpaperUrl}")`,
+          '--background-image',
+          `url("${wallpaperUrl}")`
         );
       } else {
         // Maybe it's a direct URL or just a path?
         // For now, just set it.
         document.body.style.setProperty(
-          "--background-image",
-          `url("${cleanWallpaper}")`,
+          '--background-image',
+          `url("${cleanWallpaper}")`
         );
       }
     } else {
-      document.body.style.removeProperty("--background-image");
+      document.body.style.removeProperty('--background-image');
     }
   }
 }

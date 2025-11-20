@@ -1,19 +1,83 @@
 <script lang="ts">
+import { App, TFolder } from 'obsidian';
 import { pluginSettings } from './store';
 
+export let app: App;
+
 let defaultWallpaper = $pluginSettings.defaultWallpaper;
+let wallpapersPath = $pluginSettings.wallpapersPath;
 let overlayOpacityLight = $pluginSettings.overlayOpacityLight;
 let overlayOpacityDark = $pluginSettings.overlayOpacityDark;
 
-// Subscribe to store updates to keep local variable in sync if needed
-// (though simple binding usually works, let's be explicit for clarity)
+// Subscribe to store updates to keep local variable in sync
 $: defaultWallpaper = $pluginSettings.defaultWallpaper;
+$: wallpapersPath = $pluginSettings.wallpapersPath;
 $: overlayOpacityLight = $pluginSettings.overlayOpacityLight;
 $: overlayOpacityDark = $pluginSettings.overlayOpacityDark;
+
+let suggestions: string[] = [];
+let showSuggestions = false;
+let activeSuggestionIndex = -1;
 
 function updateDefaultWallpaper(e: Event) {
   const target = e.target as HTMLInputElement;
   pluginSettings.update((s) => ({ ...s, defaultWallpaper: target.value }));
+}
+
+function updateWallpapersPath(e: Event) {
+  const target = e.target as HTMLInputElement;
+  const value = target.value;
+  pluginSettings.update((s) => ({ ...s, wallpapersPath: value }));
+
+  if (value) {
+    const folders = app.vault
+      .getAllLoadedFiles()
+      .filter((f): f is TFolder => f instanceof TFolder)
+      .map((f) => f.path);
+
+    suggestions = folders
+      .filter((path) => path.toLowerCase().includes(value.toLowerCase()))
+      .slice(0, 10);
+
+    showSuggestions = suggestions.length > 0;
+    activeSuggestionIndex = -1;
+  } else {
+    showSuggestions = false;
+  }
+}
+
+function selectSuggestion(path: string) {
+  pluginSettings.update((s) => ({ ...s, wallpapersPath: path }));
+  showSuggestions = false;
+}
+
+function handleKeydown(e: KeyboardEvent) {
+  if (!showSuggestions) return;
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    activeSuggestionIndex = (activeSuggestionIndex + 1) % suggestions.length;
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    activeSuggestionIndex =
+      (activeSuggestionIndex - 1 + suggestions.length) % suggestions.length;
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (
+      activeSuggestionIndex >= 0 &&
+      activeSuggestionIndex < suggestions.length
+    ) {
+      selectSuggestion(suggestions[activeSuggestionIndex]);
+    }
+  } else if (e.key === 'Escape') {
+    showSuggestions = false;
+  }
+}
+
+function handleBlur() {
+  setTimeout(() => {
+    showSuggestions = false;
+  }, 200);
 }
 
 function updateOverlayOpacityLight(e: Event) {
@@ -50,6 +114,39 @@ function updateOverlayOpacityDark(e: Event) {
         on:input={updateDefaultWallpaper}
         placeholder="e.g., attachments/wallpaper.jpg"
       />
+    </div>
+  </div>
+
+  <div class="setting-item">
+    <div class="setting-item-info">
+      <div class="setting-item-name">Wallpapers Directory</div>
+      <div class="setting-item-description">
+        The folder containing your wallpapers.
+      </div>
+    </div>
+    <div class="setting-item-control" style="position: relative;">
+      <input
+        type="text"
+        value={wallpapersPath}
+        on:input={updateWallpapersPath}
+        on:keydown={handleKeydown}
+        on:blur={handleBlur}
+        placeholder="e.g., Extras/Wallpapers"
+      />
+      {#if showSuggestions}
+        <div class="suggestions-dropdown">
+          {#each suggestions as suggestion, i}
+            <!-- svelte-ignore a11y-click-events-have-key-events -->
+            <!-- svelte-ignore a11y-no-static-element-interactions -->
+            <div 
+              class="suggestion-item {i === activeSuggestionIndex ? 'active' : ''}"
+              on:mousedown={() => selectSuggestion(suggestion)}
+            >
+              {suggestion}
+            </div>
+          {/each}
+        </div>
+      {/if}
     </div>
   </div>
 
@@ -138,5 +235,26 @@ function updateOverlayOpacityDark(e: Event) {
     width: 50px;
     text-align: right;
     font-variant-numeric: tabular-nums;
+  }
+  .suggestions-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 200px;
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  .suggestion-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .suggestion-item:hover, .suggestion-item.active {
+    background-color: var(--background-modifier-hover);
   }
 </style>
