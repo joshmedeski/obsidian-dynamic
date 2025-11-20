@@ -10,6 +10,7 @@ import {
   TFile,
   TFolder,
   type WorkspaceLeaf,
+  type TAbstractFile,
 } from 'obsidian';
 import { mount, unmount } from 'svelte';
 import ExampleView from './ExampleView.svelte';
@@ -21,6 +22,7 @@ import {
   pluginSettings,
 } from './store';
 import { WallpaperModal } from './WallpaperModal';
+import { WallpaperCache } from './WallpaperCache';
 
 const VIEW_TYPE_EXAMPLE = 'example-view';
 
@@ -101,12 +103,35 @@ export default class DynamicWallpaperPlugin extends Plugin {
   settings: PluginSettings = DEFAULT_SETTINGS;
   private opacityNoticeTimeout: NodeJS.Timeout | null = null;
   private currentWallpaper: TFile | null = null;
+  private wallpaperCache: WallpaperCache;
+  private syncDebounceTimer: NodeJS.Timeout | null = null;
 
   async onload() {
     await this.loadSettings();
     initStore(this);
 
+    if (this.manifest.dir) {
+      this.wallpaperCache = new WallpaperCache(
+        this.app,
+        this.manifest.dir,
+        this.settings.ffmpegPath
+      );
+    }
+
     this.addSettingTab(new DynamicWallpaperSettingTab(this.app, this));
+
+    // Initial Sync
+    this.syncWallpapers();
+
+    this.registerEvent(
+      this.app.vault.on('modify', (file) => this.handleFileEvent(file))
+    );
+    this.registerEvent(
+      this.app.vault.on('create', (file) => this.handleFileEvent(file))
+    );
+    this.registerEvent(
+      this.app.vault.on('delete', (file) => this.handleFileEvent(file))
+    );
 
     this.addCommand({
       id: 'pick-random-wallpaper',
@@ -256,7 +281,31 @@ export default class DynamicWallpaperPlugin extends Plugin {
 
   async saveSettings() {
     await this.saveData(this.settings);
+    if (this.wallpaperCache) {
+      this.wallpaperCache.updateSettings(this.settings.ffmpegPath);
+    }
     this.updateWallpaper(); // Update wallpaper immediately when settings change
+  }
+
+  async syncWallpapers() {
+    if (this.syncDebounceTimer) {
+      clearTimeout(this.syncDebounceTimer);
+    }
+
+    this.syncDebounceTimer = setTimeout(async () => {
+      const { wallpapersPath } = this.settings;
+      const folder = this.app.vault.getAbstractFileByPath(wallpapersPath);
+      if (folder instanceof TFolder && this.wallpaperCache) {
+        await this.wallpaperCache.sync(folder);
+      }
+      this.syncDebounceTimer = null;
+    }, 1000);
+  }
+
+  async handleFileEvent(file: TAbstractFile) {
+    if (file.path.startsWith(this.settings.wallpapersPath)) {
+      this.syncWallpapers();
+    }
   }
 
   async activateView() {
@@ -326,13 +375,19 @@ export default class DynamicWallpaperPlugin extends Plugin {
     const folder = this.app.vault.getAbstractFileByPath(wallpapersPath);
 
     if (folder instanceof TFolder) {
+      if (this.wallpaperCache) {
+        await this.wallpaperCache.sync(folder);
+      }
+
       const wallpapers = folder.children
         .filter(
           (file): file is TFile => file instanceof TFile && isImageFile(file)
         )
         .map((file) => ({
           file: file as TFile,
-          url: this.app.vault.getResourcePath(file as TFile),
+          url: this.wallpaperCache
+            ? this.wallpaperCache.getCachedUrl(file as TFile)
+            : this.app.vault.getResourcePath(file as TFile),
         }));
 
       if (wallpapers.length > 0) {

@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { TFile } from "obsidian";
 
-  export const wallpapers: { file: TFile; url: string }[] = [];
+  export let wallpapers: { file: TFile; url: string }[] = [];
   export let onSelect: (file: TFile) => void;
 
   let searchTerm = "";
