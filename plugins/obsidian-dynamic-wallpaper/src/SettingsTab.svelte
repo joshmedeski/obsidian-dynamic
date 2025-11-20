@@ -1,5 +1,5 @@
 <script lang="ts">
-import { App, TFolder } from 'obsidian';
+import { type App, TFolder } from 'obsidian';
 import { pluginSettings } from './store';
 
 export let app: App;
@@ -85,7 +85,7 @@ function updateOverlayOpacityLight(e: Event) {
   const target = e.target as HTMLInputElement;
   pluginSettings.update((s) => ({
     ...s,
-    overlayOpacityLight: parseFloat(target.value),
+    overlayOpacityLight: Number.parseFloat(target.value),
   }));
 }
 
@@ -93,7 +93,7 @@ function updateOverlayOpacityDark(e: Event) {
   const target = e.target as HTMLInputElement;
   pluginSettings.update((s) => ({
     ...s,
-    overlayOpacityDark: parseFloat(target.value),
+    overlayOpacityDark: Number.parseFloat(target.value),
   }));
 }
 </script>

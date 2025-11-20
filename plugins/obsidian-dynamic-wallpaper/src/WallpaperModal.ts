@@ -1,6 +1,6 @@
-import { App, Modal, TFile } from "obsidian";
-import { mount, unmount } from "svelte";
-import WallpaperSelect from "./WallpaperSelect.svelte";
+import { type App, Modal, type TFile } from 'obsidian';
+import { mount, unmount } from 'svelte';
+import WallpaperSelect from './WallpaperSelect.svelte';
 
 interface WallpaperItem {
   file: TFile;
@@ -15,7 +15,7 @@ export class WallpaperModal extends Modal {
   constructor(
     app: App,
     wallpapers: WallpaperItem[],
-    onSelect: (file: TFile) => void,
+    onSelect: (file: TFile) => void
   ) {
     super(app);
     this.wallpapers = wallpapers;
@@ -26,10 +26,10 @@ export class WallpaperModal extends Modal {
     const { contentEl } = this;
     contentEl.empty();
 
-    this.modalEl.addClass("dynamic-wallpaper-modal");
-    this.modalEl.style.setProperty("--dialog-width", "90vw");
+    this.modalEl.addClass('dynamic-wallpaper-modal');
+    this.modalEl.style.setProperty('--dialog-width', '90vw');
 
-    this.titleEl.setText("Choose Wallpaper");
+    this.titleEl.setText('Choose Wallpaper');
 
     this.component = mount(WallpaperSelect, {
       target: contentEl,
