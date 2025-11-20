@@ -5,11 +5,13 @@ import { pluginSettings } from './store';
 export let app: App;
 
 let wallpapersPath = $pluginSettings.wallpapersPath;
+let ffmpegPath = $pluginSettings.ffmpegPath;
 let overlayOpacityLight = $pluginSettings.overlayOpacityLight;
 let overlayOpacityDark = $pluginSettings.overlayOpacityDark;
 
 // Subscribe to store updates to keep local variable in sync
 $: wallpapersPath = $pluginSettings.wallpapersPath;
+$: ffmpegPath = $pluginSettings.ffmpegPath;
 $: overlayOpacityLight = $pluginSettings.overlayOpacityLight;
 $: overlayOpacityDark = $pluginSettings.overlayOpacityDark;
 
@@ -37,6 +39,12 @@ function updateWallpapersPath(e: Event) {
   } else {
     showSuggestions = false;
   }
+}
+
+function updateFfmpegPath(e: Event) {
+  const target = e.target as HTMLInputElement;
+  const value = target.value;
+  pluginSettings.update((s) => ({ ...s, ffmpegPath: value }));
 }
 
 function selectSuggestion(path: string) {
@@ -123,6 +131,23 @@ function updateOverlayOpacityDark(e: Event) {
           {/each}
         </div>
       {/if}
+    </div>
+  </div>
+
+  <div class="setting-item">
+    <div class="setting-item-info">
+      <div class="setting-item-name">FFmpeg Binary Path</div>
+      <div class="setting-item-description">
+        Absolute path to the ffmpeg executable (e.g., /opt/homebrew/bin/ffmpeg or /usr/local/bin/ffmpeg).
+      </div>
+    </div>
+    <div class="setting-item-control">
+      <input
+        type="text"
+        value={ffmpegPath}
+        on:input={updateFfmpegPath}
+        placeholder="ffmpeg"
+      />
     </div>
   </div>
 
