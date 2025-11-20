@@ -26,6 +26,9 @@ export class WallpaperModal extends Modal {
     const { contentEl } = this;
     contentEl.empty();
 
+    this.modalEl.addClass('dynamic-wallpaper-modal');
+    this.modalEl.style.setProperty('--dialog-width', '80vw');
+
     this.titleEl.setText('Select Wallpaper');
 
     this.component = mount(WallpaperSelect, {
