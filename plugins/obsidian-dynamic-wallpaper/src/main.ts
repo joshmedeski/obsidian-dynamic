@@ -11,6 +11,7 @@ import {
 import { mount, unmount } from 'svelte';
 import ExampleView from './ExampleView.svelte';
 import SettingsTab from './SettingsTab.svelte';
+import { WallpaperModal } from './WallpaperModal';
 import {
   DEFAULT_SETTINGS,
   type PluginSettings,
@@ -87,6 +88,12 @@ function simplifyWikiLink(link: string) {
   return link.replace(/\[\[|\]\]/g, '');
 }
 
+const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'svg'];
+
+function isImageFile(file: TFile): boolean {
+  return IMAGE_EXTENSIONS.includes(file.extension.toLowerCase());
+}
+
 export default class DynamicWallpaperPlugin extends Plugin {
   settings: PluginSettings = DEFAULT_SETTINGS;
   private opacityNoticeTimeout: NodeJS.Timeout | null = null;
@@ -102,6 +109,14 @@ export default class DynamicWallpaperPlugin extends Plugin {
       name: 'Pick Random Wallpaper',
       callback: () => {
         this.pickRandomWallpaper();
+      },
+    });
+
+    this.addCommand({
+      id: 'pick-wallpaper',
+      name: 'Pick Wallpaper',
+      callback: () => {
+        this.openWallpaperPicker();
       },
     });
 
@@ -219,6 +234,36 @@ export default class DynamicWallpaperPlugin extends Plugin {
     });
   }
 
+  async openWallpaperPicker() {
+    const { wallpapersPath } = this.settings;
+    const folder = this.app.vault.getAbstractFileByPath(wallpapersPath);
+
+    if (folder instanceof TFolder) {
+      const wallpapers = folder.children
+        .filter(
+          (file): file is TFile => file instanceof TFile && isImageFile(file)
+        )
+        .map((file) => ({
+          file: file as TFile,
+          url: this.app.vault.getResourcePath(file as TFile),
+        }));
+
+      if (wallpapers.length > 0) {
+        new WallpaperModal(this.app, wallpapers, (file) => {
+          const wallpaperUrl = this.app.vault.getResourcePath(file);
+          document.body.style.setProperty(
+            '--background-image',
+            `url("${wallpaperUrl}")`
+          );
+        }).open();
+      } else {
+        new Notice('No images found in the specified wallpaper directory.');
+      }
+    } else {
+      new Notice('Wallpaper directory not found.');
+    }
+  }
+
   async pickRandomWallpaper() {
     const { wallpapersPath } = this.settings;
     const folder = this.app.vault.getAbstractFileByPath(wallpapersPath);
@@ -226,10 +271,7 @@ export default class DynamicWallpaperPlugin extends Plugin {
     if (folder instanceof TFolder) {
       const images = folder.children.filter((file) => {
         if (file instanceof TFile) {
-          const extension = file.extension.toLowerCase();
-          return ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'svg'].includes(
-            extension
-          );
+          return isImageFile(file);
         }
         return false;
       });
