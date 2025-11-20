@@ -8,21 +8,21 @@ import {
   TFolder,
   Notice,
   FileSystemAdapter,
-} from "obsidian";
-import { exec } from "child_process";
-import { copyFileSync, unlinkSync } from "fs";
-import { mount, unmount } from "svelte";
-import ExampleView from "./ExampleView.svelte";
-import SettingsTab from "./SettingsTab.svelte";
-import { WallpaperModal } from "./WallpaperModal";
+} from 'obsidian';
+import { exec } from 'child_process';
+import { readFileSync, writeFileSync, unlinkSync } from 'fs';
+import { mount, unmount } from 'svelte';
+import ExampleView from './ExampleView.svelte';
+import SettingsTab from './SettingsTab.svelte';
+import { WallpaperModal } from './WallpaperModal';
 import {
   DEFAULT_SETTINGS,
   type PluginSettings,
   initStore,
   pluginSettings,
-} from "./store";
+} from './store';
 
-const VIEW_TYPE_EXAMPLE = "example-view";
+const VIEW_TYPE_EXAMPLE = 'example-view';
 
 class ExampleSvelteView extends ItemView {
   component: any;
@@ -36,14 +36,14 @@ class ExampleSvelteView extends ItemView {
   }
 
   getDisplayText() {
-    return "Example Svelte View";
+    return 'Example Svelte View';
   }
 
   async onOpen() {
     this.component = mount(ExampleView, {
       target: this.contentEl,
       props: {
-        name: "Obsidian User",
+        name: 'Obsidian User',
       },
     });
   }
@@ -84,14 +84,14 @@ class DynamicWallpaperSettingTab extends PluginSettingTab {
 }
 
 function normalizeAreasFrontmatter(areas: string | string[]): string[] {
-  return typeof areas === "string" ? [areas] : areas;
+  return typeof areas === 'string' ? [areas] : areas;
 }
 
 function simplifyWikiLink(link: string) {
-  return link.replace(/\[\[|\]\]/g, "");
+  return link.replace(/\[\[|\]\]/g, '');
 }
 
-const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "webp", "gif", "bmp", "svg"];
+const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'svg'];
 
 function isImageFile(file: TFile): boolean {
   return IMAGE_EXTENSIONS.includes(file.extension.toLowerCase());
@@ -109,44 +109,44 @@ export default class DynamicWallpaperPlugin extends Plugin {
     this.addSettingTab(new DynamicWallpaperSettingTab(this.app, this));
 
     this.addCommand({
-      id: "pick-random-wallpaper",
-      name: "Pick Random Wallpaper",
+      id: 'pick-random-wallpaper',
+      name: 'Pick Random Wallpaper',
       callback: () => {
         this.pickRandomWallpaper();
       },
     });
 
     this.addCommand({
-      id: "choose-wallpaper",
-      name: "Choose Wallpaper",
+      id: 'choose-wallpaper',
+      name: 'Choose Wallpaper',
       callback: () => {
         this.openWallpaperPicker();
       },
     });
 
     this.addCommand({
-      id: "increase-overlay-opacity",
-      name: "Increase Overlay Opacity",
+      id: 'increase-overlay-opacity',
+      name: 'Increase Overlay Opacity',
       callback: () => {
         this.changeOverlayOpacity(0.05);
       },
     });
 
     this.addCommand({
-      id: "decrease-overlay-opacity",
-      name: "Decrease Overlay Opacity",
+      id: 'decrease-overlay-opacity',
+      name: 'Decrease Overlay Opacity',
       callback: () => {
         this.changeOverlayOpacity(-0.05);
       },
     });
 
     this.addCommand({
-      id: "set-current-wallpaper-to-note",
-      name: "Set Current Wallpaper to Note",
+      id: 'set-current-wallpaper-to-note',
+      name: 'Set Current Wallpaper to Note',
       callback: async () => {
         const wallpaper = this.currentWallpaper;
         if (!wallpaper) {
-          new Notice("No wallpaper currently set.");
+          new Notice('No wallpaper currently set.');
           return;
         }
         const activeFile = this.app.workspace.getActiveFile();
@@ -155,46 +155,46 @@ export default class DynamicWallpaperPlugin extends Plugin {
             await this.app.fileManager.processFrontMatter(
               activeFile,
               (frontmatter) => {
-                frontmatter["wallpaper"] = `[[${wallpaper.name}]]`;
-              },
+                frontmatter['wallpaper'] = `[[${wallpaper.name}]]`;
+              }
             );
             new Notice(`Wallpaper updated to [[${wallpaper.name}]]`);
           } catch (err) {
-            console.error("Failed to update frontmatter", err);
-            new Notice("Failed to update wallpaper in frontmatter.");
+            console.error('Failed to update frontmatter', err);
+            new Notice('Failed to update wallpaper in frontmatter.');
           }
         } else {
-          new Notice("No active file.");
+          new Notice('No active file.');
         }
       },
     });
 
     this.addCommand({
-      id: "refresh-wallpaper",
-      name: "Refresh Wallpaper",
+      id: 'refresh-wallpaper',
+      name: 'Refresh Wallpaper',
       callback: () => {
         this.updateWallpaper();
       },
     });
 
     this.addCommand({
-      id: "flip-current-wallpaper",
-      name: "Flip Current Wallpaper (Horizontal)",
+      id: 'flip-current-wallpaper',
+      name: 'Flip Current Wallpaper (Horizontal)',
       callback: () => {
         if (!this.currentWallpaper) {
-          new Notice("No wallpaper currently set.");
+          new Notice('No wallpaper currently set.');
           return;
         }
 
         const adapter = this.app.vault.adapter;
         if (!(adapter instanceof FileSystemAdapter)) {
-          new Notice("Cannot determine file path.");
+          new Notice('Cannot determine file path.');
           return;
         }
 
         const absolutePath = adapter.getFullPath(this.currentWallpaper.path);
         const tempPath = `${absolutePath}.temp.${this.currentWallpaper.extension}`;
-        const ffmpegPath = this.settings.ffmpegPath || "ffmpeg";
+        const ffmpegPath = this.settings.ffmpegPath || 'ffmpeg';
 
         const command = `"${ffmpegPath}" -i "${absolutePath}" -vf hflip -y "${tempPath}"`;
 
@@ -202,22 +202,23 @@ export default class DynamicWallpaperPlugin extends Plugin {
           if (error) {
             console.error(`exec error: ${error}`);
             new Notice(
-              `Error flipping image. Is ffmpeg installed and the path correct? (${ffmpegPath})`,
+              `Error flipping image. Is ffmpeg installed and the path correct? (${ffmpegPath})`
             );
             return;
           }
 
           try {
-            copyFileSync(tempPath, absolutePath);
+            const data = readFileSync(tempPath);
+            writeFileSync(absolutePath, data);
             unlinkSync(tempPath);
-            new Notice("Image flipped successfully!");
+            new Notice('Image flipped successfully!');
             // Wait a bit for the file system to settle and Obsidian to detect the change
             setTimeout(() => {
               this.updateWallpaper();
             }, 500);
           } catch (err) {
-            console.error("Error copying/cleaning up file:", err);
-            new Notice("Error updating image file.");
+            console.error('Error copying/cleaning up file:', err);
+            new Notice('Error updating image file.');
           }
         });
       },
@@ -225,7 +226,7 @@ export default class DynamicWallpaperPlugin extends Plugin {
 
     this.registerView(VIEW_TYPE_EXAMPLE, (leaf) => new ExampleSvelteView(leaf));
 
-    this.addRibbonIcon("dice", "Open Example View", () => {
+    this.addRibbonIcon('dice', 'Open Example View', () => {
       this.activateView();
     });
 
@@ -233,19 +234,19 @@ export default class DynamicWallpaperPlugin extends Plugin {
 
     // Listen for active file changes
     this.registerEvent(
-      this.app.workspace.on("active-leaf-change", () => {
+      this.app.workspace.on('active-leaf-change', () => {
         this.updateWallpaper();
-      }),
+      })
     );
 
     // Listen for file modifications
     this.registerEvent(
-      this.app.metadataCache.on("changed", (file: TFile) => {
+      this.app.metadataCache.on('changed', (file: TFile) => {
         const activeFile = this.app.workspace.getActiveFile();
         if (activeFile && activeFile.path === file.path) {
           this.updateWallpaper();
         }
-      }),
+      })
     );
   }
 
@@ -284,7 +285,7 @@ export default class DynamicWallpaperPlugin extends Plugin {
   }
 
   changeOverlayOpacity(delta: number) {
-    const isDarkMode = document.body.classList.contains("theme-dark");
+    const isDarkMode = document.body.classList.contains('theme-dark');
     pluginSettings.update((settings) => {
       let newOpacity: number;
       if (isDarkMode) {
@@ -328,7 +329,7 @@ export default class DynamicWallpaperPlugin extends Plugin {
     if (folder instanceof TFolder) {
       const wallpapers = folder.children
         .filter(
-          (file): file is TFile => file instanceof TFile && isImageFile(file),
+          (file): file is TFile => file instanceof TFile && isImageFile(file)
         )
         .map((file) => ({
           file: file as TFile,
@@ -340,15 +341,15 @@ export default class DynamicWallpaperPlugin extends Plugin {
           this.currentWallpaper = file;
           const wallpaperUrl = this.app.vault.getResourcePath(file);
           document.body.style.setProperty(
-            "--background-image",
-            `url("${wallpaperUrl}")`,
+            '--background-image',
+            `url("${wallpaperUrl}")`
           );
         }).open();
       } else {
-        new Notice("No images found in the specified wallpaper directory.");
+        new Notice('No images found in the specified wallpaper directory.');
       }
     } else {
-      new Notice("Wallpaper directory not found.");
+      new Notice('Wallpaper directory not found.');
     }
   }
 
@@ -370,27 +371,27 @@ export default class DynamicWallpaperPlugin extends Plugin {
           this.currentWallpaper = randomImage;
           const wallpaperUrl = this.app.vault.getResourcePath(randomImage);
           document.body.style.setProperty(
-            "--background-image",
-            `url("${wallpaperUrl}")`,
+            '--background-image',
+            `url("${wallpaperUrl}")`
           );
         }
       } else {
-        new Notice("No images found in the specified wallpaper directory.");
+        new Notice('No images found in the specified wallpaper directory.');
       }
     } else {
-      new Notice("Wallpaper directory not found.");
+      new Notice('Wallpaper directory not found.');
     }
   }
 
   private updateWallpaper() {
     // Update overlay opacity CSS variables
     document.body.style.setProperty(
-      "--background-overlay-opacity-light",
-      this.settings.overlayOpacityLight.toString(),
+      '--background-overlay-opacity-light',
+      this.settings.overlayOpacityLight.toString()
     );
     document.body.style.setProperty(
-      "--background-overlay-opacity-dark",
-      this.settings.overlayOpacityDark.toString(),
+      '--background-overlay-opacity-dark',
+      this.settings.overlayOpacityDark.toString()
     );
 
     const activeFile = this.app.workspace.getActiveFile();
@@ -401,7 +402,7 @@ export default class DynamicWallpaperPlugin extends Plugin {
 
     if (!wallpaper && metadata?.frontmatter?.areas) {
       const areasFrontmatter = normalizeAreasFrontmatter(
-        metadata.frontmatter.areas,
+        metadata.frontmatter.areas
       );
       if (areasFrontmatter && areasFrontmatter.length > 0) {
         for (const area of areasFrontmatter) {
@@ -409,7 +410,7 @@ export default class DynamicWallpaperPlugin extends Plugin {
           // Find the area file itself (not files that belong to the area)
           const areaFile = this.app.metadataCache.getFirstLinkpathDest(
             simplifiedArea,
-            activeFile.path,
+            activeFile.path
           );
           if (areaFile) {
             const areaFileMetadata =
@@ -425,26 +426,26 @@ export default class DynamicWallpaperPlugin extends Plugin {
 
     if (wallpaper) {
       // Strip wiki link brackets if present
-      const cleanWallpaper = wallpaper.replace(/\[\[|\]\]/g, "");
+      const cleanWallpaper = wallpaper.replace(/\[\[|\]\]/g, '');
 
       // Resolve attachment to get the app:// URL
       const wallpaperFile = this.app.metadataCache.getFirstLinkpathDest(
         cleanWallpaper,
-        activeFile.path,
+        activeFile.path
       );
 
       if (wallpaperFile) {
         this.currentWallpaper = wallpaperFile;
         const wallpaperUrl = this.app.vault.getResourcePath(wallpaperFile);
         document.body.style.setProperty(
-          "--background-image",
-          `url("${wallpaperUrl}")`,
+          '--background-image',
+          `url("${wallpaperUrl}")`
         );
       } else {
         // Fallback to original value if not found as attachment
         document.body.style.setProperty(
-          "--background-image",
-          `url("${cleanWallpaper}")`,
+          '--background-image',
+          `url("${cleanWallpaper}")`
         );
       }
     }
