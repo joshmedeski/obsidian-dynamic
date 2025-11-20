@@ -97,6 +97,7 @@ function isImageFile(file: TFile): boolean {
 export default class DynamicWallpaperPlugin extends Plugin {
   settings: PluginSettings = DEFAULT_SETTINGS;
   private opacityNoticeTimeout: NodeJS.Timeout | null = null;
+  private currentWallpaper: TFile | null = null;
 
   async onload() {
     await this.loadSettings();
@@ -114,7 +115,7 @@ export default class DynamicWallpaperPlugin extends Plugin {
 
     this.addCommand({
       id: 'pick-wallpaper',
-      name: 'Pick Wallpaper',
+      name: 'Choose Wallpaper',
       callback: () => {
         this.openWallpaperPicker();
       },
@@ -133,6 +134,35 @@ export default class DynamicWallpaperPlugin extends Plugin {
       name: 'Decrease Overlay Opacity',
       callback: () => {
         this.changeOverlayOpacity(-0.05);
+      },
+    });
+
+    this.addCommand({
+      id: 'set-current-wallpaper-to-note',
+      name: 'Set Current Wallpaper to Note',
+      callback: async () => {
+        const wallpaper = this.currentWallpaper;
+        if (!wallpaper) {
+          new Notice('No wallpaper currently set.');
+          return;
+        }
+        const activeFile = this.app.workspace.getActiveFile();
+        if (activeFile) {
+          try {
+            await this.app.fileManager.processFrontMatter(
+              activeFile,
+              (frontmatter) => {
+                frontmatter['wallpaper'] = `[[${wallpaper.name}]]`;
+              }
+            );
+            new Notice(`Wallpaper updated to [[${wallpaper.name}]]`);
+          } catch (err) {
+            console.error('Failed to update frontmatter', err);
+            new Notice('Failed to update wallpaper in frontmatter.');
+          }
+        } else {
+          new Notice('No active file.');
+        }
       },
     });
 
@@ -250,6 +280,7 @@ export default class DynamicWallpaperPlugin extends Plugin {
 
       if (wallpapers.length > 0) {
         new WallpaperModal(this.app, wallpapers, (file) => {
+          this.currentWallpaper = file;
           const wallpaperUrl = this.app.vault.getResourcePath(file);
           document.body.style.setProperty(
             '--background-image',
@@ -279,6 +310,7 @@ export default class DynamicWallpaperPlugin extends Plugin {
       if (images.length > 0) {
         const randomImage = images[Math.floor(Math.random() * images.length)];
         if (randomImage instanceof TFile) {
+          this.currentWallpaper = randomImage;
           const wallpaperUrl = this.app.vault.getResourcePath(randomImage);
           document.body.style.setProperty(
             '--background-image',
@@ -345,6 +377,7 @@ export default class DynamicWallpaperPlugin extends Plugin {
       );
 
       if (wallpaperFile) {
+        this.currentWallpaper = wallpaperFile;
         const wallpaperUrl = this.app.vault.getResourcePath(wallpaperFile);
         document.body.style.setProperty(
           '--background-image',
