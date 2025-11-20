@@ -1,10 +1,12 @@
 import {
   Plugin,
-  type TFile,
+  TFile,
   ItemView,
   WorkspaceLeaf,
   PluginSettingTab,
   App,
+  TFolder,
+  Notice,
 } from 'obsidian';
 import { mount, unmount } from 'svelte';
 import ExampleView from './ExampleView.svelte';
@@ -89,6 +91,14 @@ export default class DynamicWallpaperPlugin extends Plugin {
 
     this.addSettingTab(new DynamicWallpaperSettingTab(this.app, this));
 
+    this.addCommand({
+      id: 'pick-random-wallpaper',
+      name: 'Pick Random Wallpaper',
+      callback: () => {
+        this.pickRandomWallpaper();
+      },
+    });
+
     this.registerView(VIEW_TYPE_EXAMPLE, (leaf) => new ExampleSvelteView(leaf));
 
     this.addRibbonIcon('dice', 'Open Example View', () => {
@@ -146,6 +156,38 @@ export default class DynamicWallpaperPlugin extends Plugin {
     // "Reveal" the leaf in case it is in a collapsed sidebar
     if (leaf) {
       workspace.revealLeaf(leaf);
+    }
+  }
+
+  async pickRandomWallpaper() {
+    const { wallpapersPath } = this.settings;
+    const folder = this.app.vault.getAbstractFileByPath(wallpapersPath);
+
+    if (folder instanceof TFolder) {
+      const images = folder.children.filter((file) => {
+        if (file instanceof TFile) {
+          const extension = file.extension.toLowerCase();
+          return ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'svg'].includes(
+            extension
+          );
+        }
+        return false;
+      });
+
+      if (images.length > 0) {
+        const randomImage = images[Math.floor(Math.random() * images.length)];
+        if (randomImage instanceof TFile) {
+          const wallpaperUrl = this.app.vault.getResourcePath(randomImage);
+          document.body.style.setProperty(
+            '--background-image',
+            `url("${wallpaperUrl}")`
+          );
+        }
+      } else {
+        new Notice('No images found in the specified wallpaper directory.');
+      }
+    } else {
+      new Notice('Wallpaper directory not found.');
     }
   }
 
