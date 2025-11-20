@@ -1,12 +1,12 @@
 <script lang="ts">
-import { TFile } from 'obsidian';
+  import { TFile } from "obsidian";
 
-export let wallpapers: { file: TFile; url: string }[] = [];
-export let onSelect: (file: TFile) => void;
+  export let wallpapers: { file: TFile; url: string }[] = [];
+  export let onSelect: (file: TFile) => void;
 
-function handleSelect(wallpaper: { file: TFile; url: string }) {
-  onSelect(wallpaper.file);
-}
+  function handleSelect(wallpaper: { file: TFile; url: string }) {
+    onSelect(wallpaper.file);
+  }
 </script>
 
 <div class="wallpaper-grid">
