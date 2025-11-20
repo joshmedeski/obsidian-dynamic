@@ -1,16 +1,40 @@
 <script lang="ts">
-  import { TFile } from "obsidian";
+import { TFile } from 'obsidian';
 
-  export let wallpapers: { file: TFile; url: string }[] = [];
-  export let onSelect: (file: TFile) => void;
+export let wallpapers: { file: TFile; url: string }[] = [];
+export let onSelect: (file: TFile) => void;
 
-  function handleSelect(wallpaper: { file: TFile; url: string }) {
-    onSelect(wallpaper.file);
-  }
+let searchTerm = '';
+let debouncedSearchTerm = '';
+let timer: NodeJS.Timeout;
+
+$: {
+  clearTimeout(timer);
+  timer = setTimeout(() => {
+    debouncedSearchTerm = searchTerm;
+  }, 200);
+}
+
+$: filteredWallpapers = wallpapers.filter((w) =>
+  w.file.basename.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+);
+
+function handleSelect(wallpaper: { file: TFile; url: string }) {
+  onSelect(wallpaper.file);
+}
 </script>
 
+<div class="search-container">
+  <input 
+    type="text" 
+    placeholder="Search wallpapers..." 
+    bind:value={searchTerm}
+    class="search-input"
+  />
+</div>
+
 <div class="wallpaper-grid">
-  {#each wallpapers as wallpaper}
+  {#each filteredWallpapers as wallpaper}
     <!-- svelte-ignore a11y-click-events-have-key-events -->
     <!-- svelte-ignore a11y-no-static-element-interactions -->
     <div class="wallpaper-item" on:click={() => handleSelect(wallpaper)}>
@@ -32,6 +56,14 @@
     padding: 1rem;
     max-height: 70vh;
     overflow-y: auto;
+  }
+
+  .search-container {
+    padding: 0 1rem 1rem 1rem;
+  }
+
+  .search-input {
+    width: 100%;
   }
 
   .wallpaper-item {
