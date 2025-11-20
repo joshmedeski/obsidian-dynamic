@@ -3,12 +3,14 @@ import type DynamicWallpaperPlugin from './main';
 
 export interface PluginSettings {
   wallpapersPath: string;
+  ffmpegPath: string;
   overlayOpacityLight: number;
   overlayOpacityDark: number;
 }
 
 export const DEFAULT_SETTINGS: PluginSettings = {
   wallpapersPath: '/',
+  ffmpegPath: 'ffmpeg',
   overlayOpacityLight: 0.8,
   overlayOpacityDark: 0.6,
 };
