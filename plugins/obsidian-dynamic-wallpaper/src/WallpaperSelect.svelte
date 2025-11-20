@@ -1,33 +1,35 @@
 <script lang="ts">
-import { TFile } from 'obsidian';
+  import { TFile } from "obsidian";
 
-export let wallpapers: { file: TFile; url: string }[] = [];
-export let onSelect: (file: TFile) => void;
+  export let wallpapers: { file: TFile; url: string }[] = [];
+  export let onSelect: (file: TFile) => void;
 
-let searchTerm = '';
-let debouncedSearchTerm = '';
-let timer: NodeJS.Timeout;
+  let searchTerm = "";
+  let debouncedSearchTerm = "";
+  let timer: NodeJS.Timeout;
 
-$: {
-  clearTimeout(timer);
-  timer = setTimeout(() => {
-    debouncedSearchTerm = searchTerm;
-  }, 200);
-}
+  $: {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      debouncedSearchTerm = searchTerm;
+    }, 200);
+  }
 
-$: filteredWallpapers = wallpapers.filter((w) =>
-  w.file.basename.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
-);
+  $: filteredWallpapers = wallpapers
+    .filter((w) =>
+      w.file.basename.toLowerCase().includes(debouncedSearchTerm.toLowerCase()),
+    )
+    .sort((a, b) => b.file.stat.ctime - a.file.stat.ctime);
 
-function handleSelect(wallpaper: { file: TFile; url: string }) {
-  onSelect(wallpaper.file);
-}
+  function handleSelect(wallpaper: { file: TFile; url: string }) {
+    onSelect(wallpaper.file);
+  }
 </script>
 
 <div class="search-container">
-  <input 
-    type="text" 
-    placeholder="Search wallpapers..." 
+  <input
+    type="text"
+    placeholder="Search wallpapers..."
     bind:value={searchTerm}
     class="search-input"
   />
@@ -51,10 +53,10 @@ function handleSelect(wallpaper: { file: TFile; url: string }) {
 <style>
   .wallpaper-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 1rem;
     padding: 1rem;
-    max-height: 70vh;
+    max-height: 90vh;
     overflow-y: auto;
   }
 
