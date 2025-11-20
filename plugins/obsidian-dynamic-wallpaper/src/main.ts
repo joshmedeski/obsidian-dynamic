@@ -255,31 +255,6 @@ export default class DynamicWallpaperPlugin extends Plugin {
           `url("${cleanWallpaper}")`
         );
       }
-    } else if (this.settings.defaultWallpaper) {
-      // Use default wallpaper from settings
-      const cleanWallpaper = this.settings.defaultWallpaper.replace(
-        /\[\[|\]\]/g,
-        ''
-      );
-      const wallpaperFile = this.app.metadataCache.getFirstLinkpathDest(
-        cleanWallpaper,
-        activeFile.path
-      );
-
-      if (wallpaperFile) {
-        const wallpaperUrl = this.app.vault.getResourcePath(wallpaperFile);
-        document.body.style.setProperty(
-          '--background-image',
-          `url("${wallpaperUrl}")`
-        );
-      } else {
-        // Maybe it's a direct URL or just a path?
-        // For now, just set it.
-        document.body.style.setProperty(
-          '--background-image',
-          `url("${cleanWallpaper}")`
-        );
-      }
     } else {
       document.body.style.removeProperty('--background-image');
     }
