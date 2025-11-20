@@ -1,26 +1,26 @@
-import {
-  Plugin,
-  TFile,
-  ItemView,
-  WorkspaceLeaf,
-  PluginSettingTab,
-  App,
-  TFolder,
-  Notice,
-  FileSystemAdapter,
-} from 'obsidian';
 import { exec } from 'child_process';
-import { readFileSync, writeFileSync, unlinkSync } from 'fs';
+import { readFileSync, unlinkSync, writeFileSync } from 'fs';
+import {
+  type App,
+  FileSystemAdapter,
+  ItemView,
+  Notice,
+  Plugin,
+  PluginSettingTab,
+  TFile,
+  TFolder,
+  type WorkspaceLeaf,
+} from 'obsidian';
 import { mount, unmount } from 'svelte';
 import ExampleView from './ExampleView.svelte';
 import SettingsTab from './SettingsTab.svelte';
-import { WallpaperModal } from './WallpaperModal';
 import {
   DEFAULT_SETTINGS,
-  type PluginSettings,
   initStore,
+  type PluginSettings,
   pluginSettings,
 } from './store';
+import { WallpaperModal } from './WallpaperModal';
 
 const VIEW_TYPE_EXAMPLE = 'example-view';
 
@@ -251,7 +251,7 @@ export default class DynamicWallpaperPlugin extends Plugin {
   }
 
   async loadSettings() {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    this.settings = { ...DEFAULT_SETTINGS, ...(await this.loadData()) };
   }
 
   async saveSettings() {
@@ -303,22 +303,21 @@ export default class DynamicWallpaperPlugin extends Plugin {
         }, 500);
 
         return { ...settings, overlayOpacityDark: newOpacity };
-      } else {
-        newOpacity = settings.overlayOpacityLight + delta;
-        newOpacity = Math.max(0, Math.min(1, newOpacity));
-        // Round to 2 decimal places
-        newOpacity = Math.round(newOpacity * 100) / 100;
-
-        if (this.opacityNoticeTimeout) {
-          clearTimeout(this.opacityNoticeTimeout);
-        }
-
-        this.opacityNoticeTimeout = setTimeout(() => {
-          new Notice(`Light Mode Opacity: ${newOpacity}`);
-        }, 500);
-
-        return { ...settings, overlayOpacityLight: newOpacity };
       }
+      newOpacity = settings.overlayOpacityLight + delta;
+      newOpacity = Math.max(0, Math.min(1, newOpacity));
+      // Round to 2 decimal places
+      newOpacity = Math.round(newOpacity * 100) / 100;
+
+      if (this.opacityNoticeTimeout) {
+        clearTimeout(this.opacityNoticeTimeout);
+      }
+
+      this.opacityNoticeTimeout = setTimeout(() => {
+        new Notice(`Light Mode Opacity: ${newOpacity}`);
+      }, 500);
+
+      return { ...settings, overlayOpacityLight: newOpacity };
     });
   }
 

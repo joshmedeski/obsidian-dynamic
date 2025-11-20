@@ -1,5 +1,5 @@
 <script lang="ts">
-  export let name: string = "World";
+export const name = 'World';
 </script>
 
 <div class="example-view">
