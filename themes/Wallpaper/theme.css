@@ -1,0 +1,142 @@
+body {
+  --background-overlay-opacity-light: 0.8;
+  --background-overlay-opacity-dark: 0.6;
+  --transparent-background: rgba(
+    255,
+    255,
+    255,
+    var(--background-overlay-opacity-light)
+  );
+
+  --background-image: none;
+  --background-primary: transparent;
+  --background-primary-position: center top;
+  --background-primary-repeat: no-repeat;
+  --background-primary-size: cover;
+
+  --background-secondary: transparent;
+  --background-secondary-alt: transparent;
+  --tab-container-background: transparent;
+  --titlebar-background-focused: transparent;
+
+  --divider-color: rgba(0, 0, 0, 0);
+  --file-header-justify: left;
+
+  --vault-profile-display: none;
+  --tab-text-color-focused-active-current: var(--color-accent);
+  --checkbox-marker-color: black;
+
+  --code-background: rgba(255, 255, 255, 0.3);
+
+  background-color: var(--transparent-background);
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: var(--transparent-background);
+    --transparent-background: rgba(
+      0,
+      0,
+      0,
+      var(--background-overlay-opacity-dark)
+    );
+    --divider-color: rgba(255, 255, 255, 0);
+    --code-background: rgba(0, 0, 0, 0.3);
+  }
+}
+
+.app-container {
+  background: var(--transparent-background);
+}
+
+/** Main Content **/
+/* .workspace-split.mod-root { */
+/* 	background: linear-gradient( */
+/* 		0deg, */
+/* 		hsla(20, 50%, 0%, 0.8), */
+/* 		hsla(20, 50%, 5%, 0.9) */
+/* 	); */
+/* } */
+
+/** Left **/
+/* .workspace-split.mod-left-split { */
+/* 	background: linear-gradient( */
+/* 		90deg, */
+/* 		hsla(20, 50%, 0%, 0.8), */
+/* 		hsla(20, 50%, 5%, 0.9) */
+/* 	); */
+/* } */
+
+/** Right **/
+/* .workspace-split.mod-right-split { */
+/* 	background: linear-gradient( */
+/* 		-90deg, */
+/* 		hsla(20, 50%, 0%, 0.8), */
+/* 		hsla(20, 50%, 5%, 0.9) */
+/* 	); */
+/* } */
+
+.menu,
+.modal,
+.prompt,
+.popover,
+.graph-controls,
+.suggestion-container,
+.suggestion-container.mod-search-suggestion,
+.maplibregl-popup-content,
+[role="dialog"] {
+  backdrop-filter: blur(4px);
+  background-color: var(--transparent-background);
+}
+
+.metadata-add-button,
+.view-header-left,
+.status-bar,
+.sidebar-toggle-button {
+  display: none;
+}
+
+.view-actions {
+  visibility: hidden;
+}
+
+.view-hidden:hover {
+  visibility: visible;
+}
+
+.titlebar .workspace-tab-header-tab-list,
+.titlebar .workspace-tab-header-new-tab,
+.mod-root .workspace-tab-header-tab-list,
+.mod-root .workspace-tab-header-new-tab {
+  display: none;
+}
+
+.workspace-tab-header-tab-list:hover {
+  display: flex;
+}
+
+.view-header,
+.mod-root .workspace-tab-header-container-inner {
+  padding-left: 30px;
+}
+
+.workspace .mod-root .workspace-tab-header {
+  padding-left: 0;
+}
+
+body,
+:root,
+[data-theme] {
+  background-image: var(--background-image);
+  background-position: var(--background-primary-position);
+  background-repeat: var(--background-primary-repeat);
+  background-size: var(--background-primary-size);
+  --checkbox-marker-color: white;
+}
+
+/**
+* Callouts
+*/
+.cm-embed-block.cm-callout {
+  display: inline-display;
+}
