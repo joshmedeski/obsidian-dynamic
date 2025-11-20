@@ -89,6 +89,7 @@ function simplifyWikiLink(link: string) {
 
 export default class DynamicWallpaperPlugin extends Plugin {
   settings: PluginSettings = DEFAULT_SETTINGS;
+  private opacityNoticeTimeout: NodeJS.Timeout | null = null;
 
   async onload() {
     await this.loadSettings();
@@ -183,20 +184,36 @@ export default class DynamicWallpaperPlugin extends Plugin {
   changeOverlayOpacity(delta: number) {
     const isDarkMode = document.body.classList.contains('theme-dark');
     pluginSettings.update((settings) => {
-      let newOpacity;
+      let newOpacity: number;
       if (isDarkMode) {
         newOpacity = settings.overlayOpacityDark + delta;
         newOpacity = Math.max(0, Math.min(1, newOpacity));
         // Round to 2 decimal places
         newOpacity = Math.round(newOpacity * 100) / 100;
-        new Notice(`Dark Mode Opacity: ${newOpacity}`);
+
+        if (this.opacityNoticeTimeout) {
+          clearTimeout(this.opacityNoticeTimeout);
+        }
+
+        this.opacityNoticeTimeout = setTimeout(() => {
+          new Notice(`Dark Mode Opacity: ${newOpacity}`);
+        }, 500);
+
         return { ...settings, overlayOpacityDark: newOpacity };
       } else {
         newOpacity = settings.overlayOpacityLight + delta;
         newOpacity = Math.max(0, Math.min(1, newOpacity));
         // Round to 2 decimal places
         newOpacity = Math.round(newOpacity * 100) / 100;
-        new Notice(`Light Mode Opacity: ${newOpacity}`);
+
+        if (this.opacityNoticeTimeout) {
+          clearTimeout(this.opacityNoticeTimeout);
+        }
+
+        this.opacityNoticeTimeout = setTimeout(() => {
+          new Notice(`Light Mode Opacity: ${newOpacity}`);
+        }, 500);
+
         return { ...settings, overlayOpacityLight: newOpacity };
       }
     });
