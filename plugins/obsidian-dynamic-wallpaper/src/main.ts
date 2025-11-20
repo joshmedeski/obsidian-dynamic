@@ -11,7 +11,12 @@ import {
 import { mount, unmount } from 'svelte';
 import ExampleView from './ExampleView.svelte';
 import SettingsTab from './SettingsTab.svelte';
-import { DEFAULT_SETTINGS, type PluginSettings, initStore } from './store';
+import {
+  DEFAULT_SETTINGS,
+  type PluginSettings,
+  initStore,
+  pluginSettings,
+} from './store';
 
 const VIEW_TYPE_EXAMPLE = 'example-view';
 
@@ -99,6 +104,22 @@ export default class DynamicWallpaperPlugin extends Plugin {
       },
     });
 
+    this.addCommand({
+      id: 'increase-overlay-opacity',
+      name: 'Increase Overlay Opacity',
+      callback: () => {
+        this.changeOverlayOpacity(0.05);
+      },
+    });
+
+    this.addCommand({
+      id: 'decrease-overlay-opacity',
+      name: 'Decrease Overlay Opacity',
+      callback: () => {
+        this.changeOverlayOpacity(-0.05);
+      },
+    });
+
     this.registerView(VIEW_TYPE_EXAMPLE, (leaf) => new ExampleSvelteView(leaf));
 
     this.addRibbonIcon('dice', 'Open Example View', () => {
@@ -157,6 +178,28 @@ export default class DynamicWallpaperPlugin extends Plugin {
     if (leaf) {
       workspace.revealLeaf(leaf);
     }
+  }
+
+  changeOverlayOpacity(delta: number) {
+    const isDarkMode = document.body.classList.contains('theme-dark');
+    pluginSettings.update((settings) => {
+      let newOpacity;
+      if (isDarkMode) {
+        newOpacity = settings.overlayOpacityDark + delta;
+        newOpacity = Math.max(0, Math.min(1, newOpacity));
+        // Round to 2 decimal places
+        newOpacity = Math.round(newOpacity * 100) / 100;
+        new Notice(`Dark Mode Opacity: ${newOpacity}`);
+        return { ...settings, overlayOpacityDark: newOpacity };
+      } else {
+        newOpacity = settings.overlayOpacityLight + delta;
+        newOpacity = Math.max(0, Math.min(1, newOpacity));
+        // Round to 2 decimal places
+        newOpacity = Math.round(newOpacity * 100) / 100;
+        new Notice(`Light Mode Opacity: ${newOpacity}`);
+        return { ...settings, overlayOpacityLight: newOpacity };
+      }
+    });
   }
 
   async pickRandomWallpaper() {
