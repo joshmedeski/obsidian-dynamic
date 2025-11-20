@@ -4,13 +4,11 @@ import { pluginSettings } from './store';
 
 export let app: App;
 
-let defaultWallpaper = $pluginSettings.defaultWallpaper;
 let wallpapersPath = $pluginSettings.wallpapersPath;
 let overlayOpacityLight = $pluginSettings.overlayOpacityLight;
 let overlayOpacityDark = $pluginSettings.overlayOpacityDark;
 
 // Subscribe to store updates to keep local variable in sync
-$: defaultWallpaper = $pluginSettings.defaultWallpaper;
 $: wallpapersPath = $pluginSettings.wallpapersPath;
 $: overlayOpacityLight = $pluginSettings.overlayOpacityLight;
 $: overlayOpacityDark = $pluginSettings.overlayOpacityDark;
@@ -18,11 +16,6 @@ $: overlayOpacityDark = $pluginSettings.overlayOpacityDark;
 let suggestions: string[] = [];
 let showSuggestions = false;
 let activeSuggestionIndex = -1;
-
-function updateDefaultWallpaper(e: Event) {
-  const target = e.target as HTMLInputElement;
-  pluginSettings.update((s) => ({ ...s, defaultWallpaper: target.value }));
-}
 
 function updateWallpapersPath(e: Event) {
   const target = e.target as HTMLInputElement;
@@ -99,23 +92,6 @@ function updateOverlayOpacityDark(e: Event) {
 
 <div class="dynamic-wallpaper-settings">
   <h2>Dynamic Wallpaper Settings</h2>
-
-  <div class="setting-item">
-    <div class="setting-item-info">
-      <div class="setting-item-name">Default Wallpaper</div>
-      <div class="setting-item-description">
-        The path to the wallpaper to use if no other wallpaper is specified.
-      </div>
-    </div>
-    <div class="setting-item-control">
-      <input
-        type="text"
-        value={defaultWallpaper}
-        on:input={updateDefaultWallpaper}
-        placeholder="e.g., attachments/wallpaper.jpg"
-      />
-    </div>
-  </div>
 
   <div class="setting-item">
     <div class="setting-item-info">
