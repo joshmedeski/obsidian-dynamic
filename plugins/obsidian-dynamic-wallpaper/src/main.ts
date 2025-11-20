@@ -315,8 +315,6 @@ export default class DynamicWallpaperPlugin extends Plugin {
           `url("${cleanWallpaper}")`
         );
       }
-    } else {
-      document.body.style.removeProperty('--background-image');
     }
   }
 }
