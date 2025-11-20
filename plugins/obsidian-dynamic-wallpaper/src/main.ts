@@ -166,6 +166,14 @@ export default class DynamicWallpaperPlugin extends Plugin {
       },
     });
 
+    this.addCommand({
+      id: 'refresh-wallpaper',
+      name: 'Refresh Wallpaper',
+      callback: () => {
+        this.updateWallpaper();
+      },
+    });
+
     this.registerView(VIEW_TYPE_EXAMPLE, (leaf) => new ExampleSvelteView(leaf));
 
     this.addRibbonIcon('dice', 'Open Example View', () => {
