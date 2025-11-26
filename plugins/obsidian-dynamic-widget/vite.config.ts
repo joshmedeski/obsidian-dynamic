@@ -1,6 +1,6 @@
-import { defineConfig } from "vite";
-import { createObsidianViteConfig } from "obsidian-vite-config";
+import { createObsidianViteConfig } from 'obsidian-vite-config';
+import { defineConfig } from 'vite';
 
 export default defineConfig(({ mode }) =>
-  createObsidianViteConfig({ prod: mode === "production" }),
+  createObsidianViteConfig({ prod: mode === 'production' })
 );

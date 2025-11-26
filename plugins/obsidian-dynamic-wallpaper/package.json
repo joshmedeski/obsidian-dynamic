@@ -9,7 +9,10 @@
     "@types/node": "catalog:",
     "builtin-modules": "catalog:",
     "esbuild": "catalog:",
+    "esbuild-svelte": "^0.9.3",
     "obsidian": "catalog:",
+    "svelte": "^5.43.12",
+    "svelte-preprocess": "^6.0.3",
     "tslib": "catalog:",
     "typescript": "catalog:"
   }
