@@ -369,7 +369,10 @@ export class DynamicWidgetView extends ItemView {
       areasHeaderEl.style.gap = "10px";
 
       for (const area of areas) {
-        areasHeaderEl.createEl("h2", { text: area });
+        const icon = metadata?.frontmatter?.icon;
+        areasHeaderEl.createEl("h2", {
+          text: `${icon ? `${icon} ` : ""}${area}`,
+        });
         const areaFiles = this.getFilesByArea(area);
         areasFiles.push(...areaFiles);
       }
