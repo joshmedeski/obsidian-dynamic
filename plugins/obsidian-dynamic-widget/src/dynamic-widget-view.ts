@@ -103,6 +103,99 @@ export class DynamicWidgetView extends ItemView {
     return ulEl;
   }
 
+  private makeLinkMediaGridWithTitle(
+    title: string,
+    list: TFile[] | undefined,
+  ): Element {
+    if (!list || list.length === 0) {
+      return document.createElement("div");
+    }
+
+    const sectionEl = document.createElement("section");
+    sectionEl.createEl("h3", { text: title });
+
+    const gridEl = document.createElement("div");
+    gridEl.style.display = "flex";
+    gridEl.style.flexWrap = "wrap";
+    gridEl.style.gap = "16px";
+
+    for (const file of list) {
+      const metadata = this.app.metadataCache.getFileCache(file);
+      const wallpaper = metadata?.frontmatter?.wallpaper;
+
+      if (!wallpaper) continue;
+
+      const itemEl = document.createElement("div");
+      itemEl.style.display = "flex";
+      itemEl.style.flexDirection = "column";
+      itemEl.style.cursor = "pointer";
+      itemEl.style.maxWidth = "200px";
+
+      // Get the wallpaper file
+      const cleanWallpaper = wallpaper.replace(/\[\[|\]\]/g, "");
+      const wallpaperFile = this.app.metadataCache.getFirstLinkpathDest(
+        cleanWallpaper,
+        file.path,
+      );
+
+      if (wallpaperFile) {
+        const wallpaperUrl = this.app.vault.getResourcePath(wallpaperFile);
+        const fileExtension = wallpaperFile.extension.toLowerCase();
+
+        const imageExtensions = [
+          "jpg",
+          "jpeg",
+          "png",
+          "gif",
+          "bmp",
+          "svg",
+          "webp",
+        ];
+        const videoExtensions = ["mp4", "webm", "ogg", "mov", "avi", "mkv"];
+
+        if (imageExtensions.includes(fileExtension)) {
+          const imgEl = itemEl.createEl("img", {
+            attr: { src: wallpaperUrl, alt: file.basename },
+          });
+          imgEl.style.objectFit = "cover";
+          imgEl.style.borderRadius = "8px";
+          imgEl.style.aspectRatio = "16 / 9";
+        } else if (videoExtensions.includes(fileExtension)) {
+          const videoEl = itemEl.createEl("video", {
+            attr: {
+              src: wallpaperUrl,
+              autoplay: "",
+              muted: "",
+              loop: "",
+            },
+          });
+          videoEl.style.width = "100%";
+          videoEl.style.height = "150px";
+          videoEl.style.objectFit = "cover";
+          videoEl.style.borderRadius = "8px";
+        }
+      }
+
+      const icon = metadata?.frontmatter?.icon;
+      const title = file.basename;
+      const titleEl = itemEl.createEl("span", {
+        text: icon ? `${icon} ${title}` : title,
+      });
+      titleEl.style.marginTop = "8px";
+      // titleEl.style.fontSize = "14px";
+
+      itemEl.addEventListener("click", (event) => {
+        event.preventDefault();
+        this.app.workspace.getLeaf("tab").openFile(file);
+      });
+
+      gridEl.appendChild(itemEl);
+    }
+
+    sectionEl.appendChild(gridEl);
+    return sectionEl;
+  }
+
   private filesByFolders(
     allFiles: TFile[],
     folders: FolderWithTitle[],
@@ -390,10 +483,10 @@ export class DynamicWidgetView extends ItemView {
       );
       const folders = this.filesByFolders(uniqueFiles, ORDERED_FOLDER_NAMES);
       for (const folder of folders) {
-        const areaSection = this.makeUlLinkListWithTitle(
-          folder.folder.title,
-          folder.files,
-        );
+        const areaSection =
+          folder.folder.folder === "Areas"
+            ? this.makeLinkMediaGridWithTitle(folder.folder.title, folder.files)
+            : this.makeUlLinkListWithTitle(folder.folder.title, folder.files);
         if (areaSection) {
           this.contentEl.appendChild(areaSection);
         }
