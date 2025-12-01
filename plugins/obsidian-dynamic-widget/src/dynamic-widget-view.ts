@@ -287,7 +287,34 @@ export class DynamicWidgetView extends ItemView {
     return "other";
   }
 
-  private renderCover({
+  private renderImage(coverUrl: string): void {
+    const imgEl = this.contentEl.createEl("img", {
+      cls: "area-cover-image",
+      attr: { src: coverUrl, alt: "Cover image" },
+    });
+    imgEl.style.maxWidth = "100%";
+    imgEl.style.borderRadius = "8px";
+    imgEl.style.marginBottom = "10px";
+    this.contentEl.appendChild(imgEl);
+  }
+
+  private renderVideo(coverUrl: string): void {
+    const videoEl = this.contentEl.createEl("video", {
+      cls: "area-cover-image",
+      attr: {
+        src: coverUrl,
+        autoplay: "",
+        muted: "",
+        alt: "Cover video",
+      },
+    });
+    videoEl.style.maxWidth = "100%";
+    videoEl.style.borderRadius = "8px";
+    videoEl.style.marginBottom = "10px";
+    this.contentEl.appendChild(videoEl);
+  }
+
+  private renderMedia({
     cover,
     activeFilePath,
   }: {
@@ -313,37 +340,16 @@ export class DynamicWidgetView extends ItemView {
     const videoExtensions = ["mp4", "webm", "ogg", "mov", "avi", "mkv"];
 
     if (imageExtensions.includes(fileExtension)) {
-      // Create image element
-      const imgEl = this.contentEl.createEl("img", {
-        cls: "area-cover-image",
-        attr: { src: coverUrl, alt: "Cover image" },
-      });
-      imgEl.style.maxWidth = "100%";
-      imgEl.style.borderRadius = "8px";
-      imgEl.style.marginBottom = "10px";
-      this.contentEl.appendChild(imgEl);
+      this.renderImage(coverUrl);
     } else if (videoExtensions.includes(fileExtension)) {
-      // Create video element
-      const videoEl = this.contentEl.createEl("video", {
-        cls: "area-cover-image",
-        attr: {
-          src: coverUrl,
-          autoplay: "",
-          muted: "",
-          alt: "Cover video",
-        },
-      });
-      videoEl.style.maxWidth = "100%";
-      videoEl.style.borderRadius = "8px";
-      videoEl.style.marginBottom = "10px";
-      this.contentEl.appendChild(videoEl);
+      this.renderVideo(coverUrl);
     }
   }
 
   private renderAreasContent(activeFile: TFile): void {
     const metadata = this.app.metadataCache.getFileCache(activeFile);
 
-    this.renderCover({
+    this.renderMedia({
       cover: metadata?.frontmatter?.cover,
       activeFilePath: activeFile.path,
     });
@@ -457,9 +463,6 @@ export class DynamicWidgetView extends ItemView {
         this.renderDateContent();
         break;
       default:
-        this.contentEl.createEl("p", {
-          text: "Other",
-        });
         break;
     }
   }
