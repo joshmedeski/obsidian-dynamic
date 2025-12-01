@@ -6,6 +6,7 @@ const dayFileNameRegex = /^\d{4}-\d{2}-\d{2}$/;
 type FolderWithTitle = { folder: string; title: string };
 
 const ORDERED_FOLDER_NAMES = [
+  { folder: "Areas", title: "🏠 Areas" },
   { folder: "Inbox", title: "📥 Inbox" },
   { folder: "Goals", title: "🎯 Goals" },
   { folder: "Projects/Active", title: "✅ Active Projects" },
