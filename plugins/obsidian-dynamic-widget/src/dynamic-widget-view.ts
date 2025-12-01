@@ -270,9 +270,12 @@ export class DynamicWidgetView extends ItemView {
 
   private determineActiveFileType(
     activeFile: TFile | null,
-  ): "areas" | "day" | "other" {
+  ): "area" | "areas" | "day" | "other" {
     if (!activeFile) {
       return "other";
+    }
+    if (activeFile.path.startsWith("Areas/")) {
+      return "area";
     }
     const metadata = this.app.metadataCache.getFileCache(activeFile);
     if (metadata?.frontmatter?.areas) {
@@ -446,6 +449,7 @@ export class DynamicWidgetView extends ItemView {
 
     const activeFileType = this.determineActiveFileType(activeFile);
     switch (activeFileType) {
+      case "area":
       case "areas":
         this.renderAreasContent(activeFile);
         break;
