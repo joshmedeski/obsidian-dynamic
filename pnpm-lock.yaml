@@ -166,7 +166,7 @@ importers:
         specifier: 'catalog:'
         version: 5.9.2
 
-  themes/Dynamic: {}
+  themes/Wallpaper: {}
 
 packages:
 
