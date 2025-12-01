@@ -284,70 +284,83 @@ export class DynamicWidgetView extends ItemView {
     return "other";
   }
 
+  private renderCover({
+    cover,
+    activeFilePath,
+  }: {
+    cover: string | undefined;
+    activeFilePath: string;
+  }): void {
+    if (!cover) return;
+    // Strip wiki link brackets if present
+    const cleanCover = cover.replace(/\[\[|\]\]/g, "");
+
+    const coverFile = this.app.metadataCache.getFirstLinkpathDest(
+      cleanCover,
+      activeFilePath,
+    );
+
+    if (!coverFile) return;
+
+    const coverUrl = this.app.vault.getResourcePath(coverFile);
+    const fileExtension = coverFile.extension.toLowerCase();
+
+    // Define image and video extensions
+    const imageExtensions = ["jpg", "jpeg", "png", "gif", "bmp", "svg", "webp"];
+    const videoExtensions = ["mp4", "webm", "ogg", "mov", "avi", "mkv"];
+
+    if (imageExtensions.includes(fileExtension)) {
+      // Create image element
+      const imgEl = this.contentEl.createEl("img", {
+        cls: "area-cover-image",
+        attr: { src: coverUrl, alt: "Cover image" },
+      });
+      imgEl.style.maxWidth = "100%";
+      imgEl.style.borderRadius = "8px";
+      imgEl.style.marginBottom = "10px";
+      this.contentEl.appendChild(imgEl);
+    } else if (videoExtensions.includes(fileExtension)) {
+      // Create video element
+      const videoEl = this.contentEl.createEl("video", {
+        cls: "area-cover-image",
+        attr: {
+          src: coverUrl,
+          autoplay: "",
+          muted: "",
+          alt: "Cover video",
+        },
+      });
+      videoEl.style.maxWidth = "100%";
+      videoEl.style.borderRadius = "8px";
+      videoEl.style.marginBottom = "10px";
+      this.contentEl.appendChild(videoEl);
+    }
+  }
+
   private renderAreasContent(activeFile: TFile): void {
     const metadata = this.app.metadataCache.getFileCache(activeFile);
 
-    const cover = metadata?.frontmatter?.cover;
-    if (cover) {
-      // Strip wiki link brackets if present
-      const cleanCover = cover.replace(/\[\[|\]\]/g, "");
+    this.renderCover({
+      cover: metadata?.frontmatter?.cover,
+      activeFilePath: activeFile.path,
+    });
 
-      const coverFile = this.app.metadataCache.getFirstLinkpathDest(
-        cleanCover,
-        activeFile.path,
+    let areas: string[] = [];
+
+    if (activeFile.path.startsWith("Areas/")) {
+      areas = [activeFile.basename];
+    } else {
+      // Use areas frontmatter
+      const areasFrontmatter = this.normalizeAreasFrontmatter(
+        metadata?.frontmatter?.areas,
       );
-
-      if (coverFile) {
-        const coverUrl = this.app.vault.getResourcePath(coverFile);
-        const fileExtension = coverFile.extension.toLowerCase();
-
-        // Define image and video extensions
-        const imageExtensions = [
-          "jpg",
-          "jpeg",
-          "png",
-          "gif",
-          "bmp",
-          "svg",
-          "webp",
-        ];
-        const videoExtensions = ["mp4", "webm", "ogg", "mov", "avi", "mkv"];
-
-        if (imageExtensions.includes(fileExtension)) {
-          // Create image element
-          const imgEl = this.contentEl.createEl("img", {
-            cls: "area-cover-image",
-            attr: { src: coverUrl, alt: "Cover image" },
-          });
-          imgEl.style.maxWidth = "100%";
-          imgEl.style.borderRadius = "8px";
-          imgEl.style.marginBottom = "10px";
-          this.contentEl.appendChild(imgEl);
-        } else if (videoExtensions.includes(fileExtension)) {
-          // Create video element
-          const videoEl = this.contentEl.createEl("video", {
-            cls: "area-cover-image",
-            attr: {
-              src: coverUrl,
-              autoplay: "",
-              muted: "",
-              alt: "Cover video",
-            },
-          });
-          videoEl.style.maxWidth = "100%";
-          videoEl.style.borderRadius = "8px";
-          videoEl.style.marginBottom = "10px";
-          this.contentEl.appendChild(videoEl);
-        }
+      if (areasFrontmatter && areasFrontmatter.length > 0) {
+        areas = areasFrontmatter.map(this.simplifyWikiLink);
       }
     }
 
-    const areasFrontmatter = this.normalizeAreasFrontmatter(
-      metadata?.frontmatter?.areas,
-    );
-    const areasFiles: TFile[] = [];
-    if (!!areasFrontmatter && areasFrontmatter.length > 0) {
-      const areas: string[] = areasFrontmatter.map(this.simplifyWikiLink);
+    if (areas.length > 0) {
+      const areasFiles: TFile[] = [];
       const areasHeaderEl = this.contentEl.createEl("div", {
         cls: "areas-header",
       });
