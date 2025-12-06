@@ -5,19 +5,30 @@ const dayFileNameRegex = /^\d{4}-\d{2}-\d{2}$/;
 
 type FolderWithTitle = { folder: string; title: string };
 
-const ORDERED_FOLDER_NAMES = [
+const IS_AREA_FOLDERS = [
+  { folder: "Inbox", title: "📥 Inbox" },
   { folder: "Areas", title: "🏠 Areas" },
+  { folder: "Goals", title: "🎯 Goals" },
+  { folder: "Projects/Active", title: "✅ Active Projects" },
+  { folder: "Projects/Waiting For", title: "⏳ Waiting For" },
+  { folder: "Relationships", title: "👥 Relationships" },
+  { folder: "Resources", title: "📚 Resources" },
+  { folder: "Projects/Someday Maybe", title: "🔮 Someday Maybe" },
+  { folder: "Archives", title: "🗄️ Archives" },
+];
+
+const HAS_AREAS_FOLDERS = [
   { folder: "Inbox", title: "📥 Inbox" },
   { folder: "Goals", title: "🎯 Goals" },
   { folder: "Projects/Active", title: "✅ Active Projects" },
   { folder: "Projects/Waiting For", title: "⏳ Waiting For" },
-  { folder: "Projects/Backlog", title: "📋 Backlog" },
   { folder: "Relationships", title: "👥 Relationships" },
   { folder: "Resources", title: "📚 Resources" },
+  { folder: "Projects/Someday Maybe", title: "🔮 Someday Maybe" },
   { folder: "Archives", title: "🗄️ Archives" },
 ];
 
-const DAILY_FOLDERS = [
+const IS_DAILY_FOLDERS = [
   { folder: "Inbox", title: "📥 Inbox" },
   { folder: "Projects/Active", title: "✅ Active Projects" },
   { folder: "Projects/Waiting For", title: "⏳ Waiting For" },
@@ -64,39 +75,52 @@ export class DynamicWidgetView extends ItemView {
     // Add emoji bullet class
     ulEl.classList.add("emoji-bullet-list");
 
-    const liEls = list.map((note) => {
-      const projectEl = document.createElement("li");
+    const liEls = list
+      .sort((a, b) => {
+        const aMetadata = this.app.metadataCache.getFileCache(a);
+        const bMetadata = this.app.metadataCache.getFileCache(b);
+        const areaA = aMetadata?.frontmatter?.areas?.[0]; // might not exist
+        const areaB = bMetadata?.frontmatter?.areas?.[0]; // might not exist
+        if (areaA && areaB) {
+          return areaA.localeCompare(areaB);
+        }
+        if (areaA && !areaB) return -1;
+        if (!areaA && areaB) return 1;
+        if (!areaA && !areaB) return 0;
+      })
+      .map((note) => {
+        const projectEl = document.createElement("li");
 
-      if (activeFile && activeFile.path === note.path) {
-        projectEl.createEl("span", {
-          text: `👉 ${note.basename}`,
-          cls: "dynamic-widget-active-file",
+        if (activeFile && activeFile.path === note.path) {
+          projectEl.createEl("span", {
+            text: `👉 ${note.basename}`,
+            cls: "dynamic-widget-active-file",
+          });
+          return projectEl;
+        }
+
+        const metadata = this.app.metadataCache.getFileCache(note);
+
+        projectEl.classList.add("emoji-bullet-item");
+
+        // Extract emoji from the file's path
+        const emoji = metadata?.frontmatter?.icon;
+        if (emoji) {
+          projectEl.style.setProperty("--emoji-bullet", `"${emoji}"`);
+        } else {
+          projectEl.style.setProperty("--emoji-bullet", "👋");
+        }
+
+        const linkEl = projectEl.createEl("a", {
+          text: metadata?.frontmatter?.title || note.basename,
+        });
+
+        linkEl.addEventListener("click", (event) => {
+          event.preventDefault();
+          this.app.workspace.getLeaf("tab").openFile(note);
         });
         return projectEl;
-      }
-
-      const metadata = this.app.metadataCache.getFileCache(note);
-
-      projectEl.classList.add("emoji-bullet-item");
-
-      // Extract emoji from the file's path
-      const emoji = metadata?.frontmatter?.icon;
-      if (emoji) {
-        projectEl.style.setProperty("--emoji-bullet", `"${emoji}"`);
-      } else {
-        projectEl.style.setProperty("--emoji-bullet", "👋");
-      }
-
-      const linkEl = projectEl.createEl("a", {
-        text: metadata?.frontmatter?.title || note.basename,
       });
-
-      linkEl.addEventListener("click", (event) => {
-        event.preventDefault();
-        this.app.workspace.getLeaf("tab").openFile(note);
-      });
-      return projectEl;
-    });
     for (const liEl of liEls) {
       ulEl.appendChild(liEl);
     }
@@ -439,6 +463,61 @@ export class DynamicWidgetView extends ItemView {
     }
   }
 
+  private renderAreaContent(activeFile: TFile): void {
+    const metadata = this.app.metadataCache.getFileCache(activeFile);
+
+    this.renderMedia({
+      cover: metadata?.frontmatter?.cover,
+      activeFilePath: activeFile.path,
+    });
+
+    let areas: string[] = [];
+
+    if (activeFile.path.startsWith("Areas/")) {
+      areas = [activeFile.basename];
+    } else {
+      // Use areas frontmatter
+      const areasFrontmatter = this.normalizeAreasFrontmatter(
+        metadata?.frontmatter?.areas,
+      );
+      if (areasFrontmatter && areasFrontmatter.length > 0) {
+        areas = areasFrontmatter.map(this.simplifyWikiLink);
+      }
+    }
+
+    if (areas.length > 0) {
+      const areasFiles: TFile[] = [];
+      const areasHeaderEl = this.contentEl.createEl("div", {
+        cls: "areas-header",
+      });
+      areasHeaderEl.style.display = "flex";
+      areasHeaderEl.style.flexWrap = "wrap";
+      areasHeaderEl.style.gap = "10px";
+
+      for (const area of areas) {
+        const icon = metadata?.frontmatter?.icon;
+        areasHeaderEl.createEl("h2", {
+          text: `${icon ? `${icon} ` : ""}${area}`,
+        });
+        const areaFiles = this.getFilesByArea(area);
+        areasFiles.push(...areaFiles);
+      }
+      const uniqueFiles = Array.from(
+        new Map(areasFiles.map((file) => [file.path, file])).values(),
+      );
+      const folders = this.filesByFolders(uniqueFiles, IS_AREA_FOLDERS);
+      for (const folder of folders) {
+        const areaSection =
+          folder.folder.folder === "Areas"
+            ? this.makeLinkMediaGridWithTitle(folder.folder.title, folder.files)
+            : this.makeUlLinkListWithTitle(folder.folder.title, folder.files);
+        if (areaSection) {
+          this.contentEl.appendChild(areaSection);
+        }
+      }
+    }
+  }
+
   private renderAreasContent(activeFile: TFile): void {
     const metadata = this.app.metadataCache.getFileCache(activeFile);
 
@@ -481,7 +560,7 @@ export class DynamicWidgetView extends ItemView {
       const uniqueFiles = Array.from(
         new Map(areasFiles.map((file) => [file.path, file])).values(),
       );
-      const folders = this.filesByFolders(uniqueFiles, ORDERED_FOLDER_NAMES);
+      const folders = this.filesByFolders(uniqueFiles, HAS_AREAS_FOLDERS);
       for (const folder of folders) {
         const areaSection =
           folder.folder.folder === "Areas"
@@ -517,7 +596,7 @@ export class DynamicWidgetView extends ItemView {
     });
 
     const allFiles = this.app.vault.getFiles();
-    const folders = this.filesByFolders(allFiles, DAILY_FOLDERS);
+    const folders = this.filesByFolders(allFiles, IS_DAILY_FOLDERS);
     for (const folder of folders) {
       const areaSection = this.makeUlLinkListWithTitle(
         folder.folder.title,
@@ -549,6 +628,7 @@ export class DynamicWidgetView extends ItemView {
     const activeFileType = this.determineActiveFileType(activeFile);
     switch (activeFileType) {
       case "area":
+        this.renderAreaContent(activeFile);
       case "areas":
         this.renderAreasContent(activeFile);
         break;
