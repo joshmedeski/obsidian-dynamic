@@ -104,11 +104,11 @@ export class DynamicWidgetView extends ItemView {
         projectEl.classList.add("emoji-bullet-item");
 
         // Extract emoji from the file's path
-        const emoji = metadata?.frontmatter?.icon;
-        if (emoji) {
-          projectEl.style.setProperty("--emoji-bullet", `"${emoji}"`);
+        const icon = metadata?.frontmatter?.icon;
+        if (icon) {
+          projectEl.style.setProperty("--emoji-bullet", `"${icon}"`);
         } else {
-          projectEl.style.setProperty("--emoji-bullet", "👋");
+          projectEl.style.setProperty("--emoji-bullet", "'⏺️'");
         }
 
         const linkEl = projectEl.createEl("a", {
