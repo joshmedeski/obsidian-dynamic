@@ -629,6 +629,7 @@ export class DynamicWidgetView extends ItemView {
     switch (activeFileType) {
       case "area":
         this.renderAreaContent(activeFile);
+        break;
       case "areas":
         this.renderAreasContent(activeFile);
         break;
