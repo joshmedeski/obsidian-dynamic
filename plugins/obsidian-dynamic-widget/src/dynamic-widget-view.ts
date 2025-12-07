@@ -6,8 +6,8 @@ const dayFileNameRegex = /^\d{4}-\d{2}-\d{2}$/;
 type FolderWithTitle = { folder: string; title: string };
 
 const IS_AREA_FOLDERS = [
-  { folder: "Inbox", title: "📥 Inbox" },
   { folder: "Areas", title: "🏠 Areas" },
+  { folder: "Inbox", title: "📥 Inbox" },
   { folder: "Goals", title: "🎯 Goals" },
   { folder: "Projects/Active", title: "✅ Active Projects" },
   { folder: "Projects/Waiting For", title: "⏳ Waiting For" },
@@ -18,6 +18,7 @@ const IS_AREA_FOLDERS = [
 ];
 
 const HAS_AREAS_FOLDERS = [
+  { folder: "Areas", title: "🏠 Areas" },
   { folder: "Inbox", title: "📥 Inbox" },
   { folder: "Goals", title: "🎯 Goals" },
   { folder: "Projects/Active", title: "✅ Active Projects" },
@@ -139,8 +140,8 @@ export class DynamicWidgetView extends ItemView {
     sectionEl.createEl("h3", { text: title });
 
     const gridEl = document.createElement("div");
-    gridEl.style.display = "flex";
-    gridEl.style.flexWrap = "wrap";
+    gridEl.style.display = "grid";
+    gridEl.style.gridTemplateColumns = "repeat(2, 1fr)";
     gridEl.style.gap = "16px";
 
     for (const file of list) {
@@ -153,7 +154,7 @@ export class DynamicWidgetView extends ItemView {
       itemEl.style.display = "flex";
       itemEl.style.flexDirection = "column";
       itemEl.style.cursor = "pointer";
-      itemEl.style.maxWidth = "200px";
+      itemEl.style.maxWidth = "100%";
 
       // Get the wallpaper file
       const cleanWallpaper = wallpaper.replace(/\[\[|\]\]/g, "");
@@ -550,10 +551,6 @@ export class DynamicWidgetView extends ItemView {
       areasHeaderEl.style.gap = "10px";
 
       for (const area of areas) {
-        const icon = metadata?.frontmatter?.icon;
-        areasHeaderEl.createEl("h2", {
-          text: `${icon ? `${icon} ` : ""}${area}`,
-        });
         const areaFiles = this.getFilesByArea(area);
         areasFiles.push(...areaFiles);
       }
