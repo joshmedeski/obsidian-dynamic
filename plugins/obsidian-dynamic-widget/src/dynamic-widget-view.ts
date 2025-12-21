@@ -35,6 +35,11 @@ const IS_DAILY_FOLDERS = [
   { folder: "Projects/Waiting For", title: "⏳ Waiting For" },
 ];
 
+const NO_ACTIVE_FILE = [
+  { folder: "Inbox", title: "📥 Inbox" },
+  { folder: "Projects/Active", title: "✅ Active Projects" }
+];
+
 type FilesByFolder = { folder: FolderWithTitle; files: TFile[] }[];
 
 export class DynamicWidgetView extends ItemView {
@@ -639,9 +644,15 @@ export class DynamicWidgetView extends ItemView {
 
     const activeFile = this.app.workspace.getActiveFile();
     if (!activeFile) {
-      this.contentEl.createEl("p", {
-        text: "No file is currently active",
-      });
+      // Show inbox and active projects when no file is active
+      const allFiles = this.app.vault.getFiles();
+      const folders = this.filesByFolders(allFiles, NO_ACTIVE_FILE);
+      for (const folder of folders) {
+        const section = this.makeUlLinkListWithTitle(folder.folder.title, folder.files);
+        if (section) {
+          this.contentEl.appendChild(section);
+        }
+      }
       return;
     }
 
