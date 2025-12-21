@@ -37,7 +37,7 @@ const IS_DAILY_FOLDERS = [
 
 const NO_ACTIVE_FILE = [
   { folder: "Inbox", title: "📥 Inbox" },
-  { folder: "Projects/Active", title: "✅ Active Projects" }
+  { folder: "Projects/Active", title: "✅ Active Projects" },
 ];
 
 type FilesByFolder = { folder: FolderWithTitle; files: TFile[] }[];
@@ -134,7 +134,7 @@ export class DynamicWidgetView extends ItemView {
   }
 
   private makeLinkMediaGridWithTitle(
-    title: string,
+    _title: string,
     list: TFile[] | undefined,
   ): Element {
     if (!list || list.length === 0) {
@@ -648,7 +648,10 @@ export class DynamicWidgetView extends ItemView {
       const allFiles = this.app.vault.getFiles();
       const folders = this.filesByFolders(allFiles, NO_ACTIVE_FILE);
       for (const folder of folders) {
-        const section = this.makeUlLinkListWithTitle(folder.folder.title, folder.files);
+        const section = this.makeUlLinkListWithTitle(
+          folder.folder.title,
+          folder.files,
+        );
         if (section) {
           this.contentEl.appendChild(section);
         }
