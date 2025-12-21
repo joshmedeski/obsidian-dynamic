@@ -137,7 +137,7 @@ export class DynamicWidgetView extends ItemView {
     }
 
     const sectionEl = document.createElement("section");
-    sectionEl.createEl("h3", { text: title });
+    // sectionEl.createEl("h3", { text: title });
 
     const gridEl = document.createElement("div");
     gridEl.style.display = "grid";
@@ -550,9 +550,32 @@ export class DynamicWidgetView extends ItemView {
       areasHeaderEl.style.flexWrap = "wrap";
       areasHeaderEl.style.gap = "10px";
 
+      const areaFiles: TFile[] = [];
+
       for (const area of areas) {
-        const areaFiles = this.getFilesByArea(area);
-        areasFiles.push(...areaFiles);
+        const areaFile = this.app.vault.getFiles().find((file) => {
+          const fileMetadata = this.app.metadataCache.getFileCache(file);
+          const aliases: string[] | undefined =
+            fileMetadata?.frontmatter?.aliases;
+          if (aliases) {
+            const simplifiedAliases = this.normalizeAreasFrontmatter(
+              aliases,
+            ).map(this.simplifyWikiLink);
+            if (simplifiedAliases.includes(area)) {
+              return true;
+            }
+          }
+          return file.basename === area;
+        });
+        if (areaFile) areaFiles.push(areaFile);
+        const filesByArea = this.getFilesByArea(area).filter((file) => {
+          return !file.path.startsWith("Areas");
+        });
+        areasFiles.push(...filesByArea);
+      }
+      if (areaFiles.length > 0) {
+        const areaGrid = this.makeLinkMediaGridWithTitle("🏠 Areas", areaFiles);
+        this.contentEl.appendChild(areaGrid);
       }
       const uniqueFiles = Array.from(
         new Map(areasFiles.map((file) => [file.path, file])).values(),
