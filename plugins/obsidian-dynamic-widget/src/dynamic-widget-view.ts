@@ -3,7 +3,15 @@ import { ItemView, type TFile } from "obsidian";
 export const VIEW_TYPE_DYNAMIC_WIDGET = "dynamic-widget-view";
 const dayFileNameRegex = /^\d{4}-\d{2}-\d{2}$/;
 
-type FolderWithTitle = { folder: string; title: string };
+type FolderWithTitle = {
+  folder: string;
+  title: string;
+  timeGroup?: {
+    compareRule: "start-of-day";
+    staleLabel: string;
+    updatedLabel: string;
+  };
+};
 
 const IS_AREA_FOLDERS = [
   { folder: "Areas", title: "🏠 Areas" },
@@ -31,7 +39,15 @@ const HAS_AREAS_FOLDERS = [
 
 const IS_DAILY_FOLDERS = [
   { folder: "Inbox", title: "📥 Inbox" },
-  { folder: "Projects/Active", title: "✅ Active Projects" },
+  {
+    folder: "Projects/Active",
+    title: "✅ Active Projects",
+    timeGroup: {
+      compareRule: "start-of-day" as const,
+      staleLabel: "Stale",
+      updatedLabel: "Updated Today",
+    },
+  },
   { folder: "Projects/Waiting For", title: "⏳ Waiting For" },
 ];
 
@@ -68,6 +84,43 @@ export class DynamicWidgetView extends ItemView {
     sectionEl.createEl("h3", { text: title });
     const ulEl = this.makeUlLinkList(list);
     sectionEl.appendChild(ulEl);
+    return sectionEl;
+  }
+
+  private makeUlLinkListWithTimeGroups(
+    title: string,
+    files: TFile[],
+    startOfDay: Date,
+    staleLabel: string,
+    updatedLabel: string,
+  ): Element {
+    if (!files || files.length === 0) {
+      return document.createElement("div");
+    }
+
+    const startMs = startOfDay.getTime();
+    const stale = files.filter((f) => f.stat.mtime < startMs);
+    const updated = files.filter((f) => f.stat.mtime >= startMs);
+
+    const sectionEl = document.createElement("section");
+    sectionEl.createEl("h3", { text: title });
+
+    if (stale.length > 0) {
+      sectionEl.createEl("h4", {
+        text: staleLabel,
+        cls: "dynamic-widget-time-group-label",
+      });
+      sectionEl.appendChild(this.makeUlLinkList(stale));
+    }
+
+    if (updated.length > 0) {
+      sectionEl.createEl("h4", {
+        text: updatedLabel,
+        cls: "dynamic-widget-time-group-label",
+      });
+      sectionEl.appendChild(this.makeUlLinkList(updated));
+    }
+
     return sectionEl;
   }
 
@@ -231,14 +284,16 @@ export class DynamicWidgetView extends ItemView {
     folders: FolderWithTitle[],
   ): FilesByFolder {
     const notesByFolder: FilesByFolder = [];
-    for (const { folder, title } of folders) {
+    for (const folderWithTitle of folders) {
       const files = allFiles
         .filter(
-          (file) => file.path.startsWith(folder) && file.extension === "md",
+          (file) =>
+            file.path.startsWith(folderWithTitle.folder) &&
+            file.extension === "md",
         )
         .sort((a, b) => b.stat.mtime - a.stat.mtime);
       if (files) {
-        notesByFolder.push({ folder: { folder, title }, files });
+        notesByFolder.push({ folder: folderWithTitle, files });
       }
     }
     return notesByFolder;
@@ -610,9 +665,9 @@ export class DynamicWidgetView extends ItemView {
     }
 
     const [year, month, day] = basename.split("-").map(Number);
-    const date = new Date(year, month - 1, day); // month is 0-indexed
+    const noteDate = new Date(year, month - 1, day); // month is 0-indexed
     this.contentEl.createEl("h2", {
-      text: `🌅 ${date.toLocaleDateString("en-US", {
+      text: `🌅 ${noteDate.toLocaleDateString("en-US", {
         weekday: "short",
         month: "short",
         day: "numeric",
@@ -620,20 +675,38 @@ export class DynamicWidgetView extends ItemView {
       })}`,
     });
 
+    const today = new Date();
+    const isToday =
+      noteDate.getFullYear() === today.getFullYear() &&
+      noteDate.getMonth() === today.getMonth() &&
+      noteDate.getDate() === today.getDate();
+
+    const startOfDay = new Date(year, month - 1, day, 0, 0, 0, 0);
+
     const allFiles = this.app.vault.getFiles();
     const folders = this.filesByFolders(allFiles, IS_DAILY_FOLDERS);
     for (const folder of folders) {
-      const areaSection = this.makeUlLinkListWithTitle(
-        folder.folder.title,
-        folder.files,
-      );
-      if (areaSection) {
-        this.contentEl.appendChild(areaSection);
+      const { timeGroup } = folder.folder;
+      if (isToday && timeGroup?.compareRule === "start-of-day") {
+        const section = this.makeUlLinkListWithTimeGroups(
+          folder.folder.title,
+          folder.files,
+          startOfDay,
+          timeGroup.staleLabel,
+          timeGroup.updatedLabel,
+        );
+        this.contentEl.appendChild(section);
+      } else {
+        const section = this.makeUlLinkListWithTitle(
+          folder.folder.title,
+          folder.files,
+        );
+        this.contentEl.appendChild(section);
       }
     }
 
-    this.getFilesByDayCreated(date);
-    this.getFilesByDayModified(date);
+    this.getFilesByDayCreated(noteDate);
+    this.getFilesByDayModified(noteDate);
   }
 
   private updateContent() {
