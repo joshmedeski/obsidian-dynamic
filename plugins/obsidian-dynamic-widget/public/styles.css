@@ -69,3 +69,18 @@
 .areas-header h2 {
   margin: 0;
 }
+
+/* Time group sub-section labels */
+.dynamic-widget-content section h4.dynamic-widget-time-group-label {
+  margin-top: 0.75em;
+  margin-bottom: 0.25em;
+  font-size: var(--font-smaller);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dynamic-widget-content section h4.dynamic-widget-time-group-label:first-of-type {
+  margin-top: 0.25em;
+}
