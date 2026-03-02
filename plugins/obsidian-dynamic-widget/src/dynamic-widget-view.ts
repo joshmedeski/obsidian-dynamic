@@ -218,12 +218,18 @@ export class DynamicWidgetView extends ItemView {
     const sectionEl = document.createElement("section");
     sectionEl.createEl("h3", { text: title });
 
+    const seen = new Set<string>();
     for (const group of groups) {
       const groupFiles = files
         .filter(
-          (f) => f.stat.mtime >= group.minMs && f.stat.mtime < group.maxMs,
+          (f) =>
+            !seen.has(f.path) &&
+            f.stat.mtime >= group.minMs &&
+            f.stat.mtime < group.maxMs,
         )
         .sort((a, b) => b.stat.mtime - a.stat.mtime);
+
+      for (const f of groupFiles) seen.add(f.path);
 
       if (groupFiles.length === 0) continue;
 
