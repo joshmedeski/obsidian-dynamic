@@ -834,9 +834,6 @@ export class DynamicWidgetView extends ItemView {
       const section = this.renderFolderSection(folder.folder, folder.files);
       this.contentEl.appendChild(section);
     }
-
-    this.getFilesByDayCreated(noteDate);
-    this.getFilesByDayModified(noteDate);
   }
 
   private updateContent() {
