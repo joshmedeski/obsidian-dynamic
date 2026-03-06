@@ -46,7 +46,7 @@ export default class MusicCollectorPlugin extends Plugin {
       name: 'Search MusicBrainz',
       callback: () => {
         new MusicSearchModal(this.app, (result) => {
-          createAlbumNote(this.app, result, this.settings.outputFolder);
+          createAlbumNote(this.app, result, this.settings);
         }).open();
       },
     });

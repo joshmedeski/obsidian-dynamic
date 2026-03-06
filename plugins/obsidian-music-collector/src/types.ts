@@ -28,8 +28,12 @@ export interface SearchResult {
 
 export interface MusicCollectorSettings {
   outputFolder: string;
+  templatePath: string;
+  filenameFormat: string;
 }
 
 export const DEFAULT_SETTINGS: MusicCollectorSettings = {
   outputFolder: 'Music',
+  templatePath: '',
+  filenameFormat: '{{artist}} - {{title}}',
 };
