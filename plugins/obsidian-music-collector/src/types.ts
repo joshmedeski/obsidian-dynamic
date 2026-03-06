@@ -73,12 +73,18 @@ export interface DiscogsRelease {
   discogsUrl: string;
 }
 
+export interface DiscogsCache {
+  releases: DiscogsRelease[];
+  lastFetched: number; // Unix timestamp ms
+}
+
 export interface MusicCollectorSettings {
   outputFolder: string;
   templatePath: string;
   filenameFormat: string;
   discogsToken: string;
   discogsUsername: string;
+  cacheTTLMinutes: number;
 }
 
 export const DEFAULT_SETTINGS: MusicCollectorSettings = {
@@ -87,4 +93,5 @@ export const DEFAULT_SETTINGS: MusicCollectorSettings = {
   filenameFormat: '{{artist}} - {{title}}',
   discogsToken: '',
   discogsUsername: '',
+  cacheTTLMinutes: 60,
 };
