@@ -5,7 +5,7 @@ import SettingsTab from './SettingsTab.svelte';
 import { DiscogsCollectionView, DISCOGS_VIEW_TYPE } from './DiscogsCollectionView';
 import { createAlbumNote } from './noteCreator';
 import { initStore } from './store';
-import { DEFAULT_SETTINGS, type MusicCollectorSettings } from './types';
+import { DEFAULT_SETTINGS, type DiscogsCache, type MusicCollectorSettings } from './types';
 
 class MusicCollectorSettingTab extends PluginSettingTab {
   component: any;
@@ -35,6 +35,7 @@ class MusicCollectorSettingTab extends PluginSettingTab {
 
 export default class MusicCollectorPlugin extends Plugin {
   settings: MusicCollectorSettings = DEFAULT_SETTINGS;
+  discogsCache: DiscogsCache | null = null;
 
   async onload() {
     await this.loadSettings();
@@ -78,11 +79,21 @@ export default class MusicCollectorPlugin extends Plugin {
   }
 
   async loadSettings() {
-    this.settings = { ...DEFAULT_SETTINGS, ...(await this.loadData()) };
+    const data = await this.loadData();
+    if (data) {
+      const { discogsCache, ...rest } = data;
+      this.settings = { ...DEFAULT_SETTINGS, ...rest };
+      this.discogsCache = discogsCache ?? null;
+    }
   }
 
   async saveSettings() {
-    await this.saveData(this.settings);
+    await this.saveData({ ...this.settings, discogsCache: this.discogsCache });
+  }
+
+  async saveCache(cache: DiscogsCache) {
+    this.discogsCache = cache;
+    await this.saveData({ ...this.settings, discogsCache: this.discogsCache });
   }
 
   onunload() {}
