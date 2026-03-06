@@ -1,8 +1,12 @@
 import { writable } from 'svelte/store';
 import type MusicCollectorPlugin from './main';
 import { DEFAULT_SETTINGS, type MusicCollectorSettings } from './types';
+import type { DiscogsRelease } from './types';
 
 export const pluginSettings = writable<MusicCollectorSettings>(DEFAULT_SETTINGS);
+export const discogsCollection = writable<DiscogsRelease[]>([]);
+export const discogsLoading = writable<boolean>(false);
+export const discogsError = writable<string>('');
 
 let plugin: MusicCollectorPlugin;
 
