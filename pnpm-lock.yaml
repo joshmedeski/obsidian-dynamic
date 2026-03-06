@@ -17,7 +17,7 @@ catalogs:
       version: 0.25.9
     obsidian:
       specifier: latest
-      version: 1.10.3
+      version: 1.12.3
     tslib:
       specifier: ^2.8.1
       version: 2.8.1
@@ -89,7 +89,7 @@ importers:
         version: 0.9.3(esbuild@0.25.9)(svelte@5.43.12)
       obsidian:
         specifier: 'catalog:'
-        version: 1.10.3(@codemirror/state@6.5.2)(@codemirror/view@6.38.1)
+        version: 1.12.3(@codemirror/state@6.5.2)(@codemirror/view@6.38.1)
       svelte:
         specifier: ^5.43.12
         version: 5.43.12
@@ -110,10 +110,37 @@ importers:
         version: 20.19.4
       obsidian:
         specifier: 'catalog:'
-        version: 1.10.3(@codemirror/state@6.5.2)(@codemirror/view@6.38.1)
+        version: 1.12.3(@codemirror/state@6.5.2)(@codemirror/view@6.38.1)
       obsidian-vite-config:
         specifier: workspace:*
         version: link:../../packages/obsidian-vitest-config
+      tslib:
+        specifier: 'catalog:'
+        version: 2.8.1
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.2
+      vite:
+        specifier: 'catalog:'
+        version: 7.1.2(@types/node@20.19.4)(yaml@2.8.1)
+
+  plugins/obsidian-music-collector:
+    devDependencies:
+      '@sveltejs/vite-plugin-svelte':
+        specifier: ^6.2.4
+        version: 6.2.4(svelte@5.43.12)(vite@7.1.2(@types/node@20.19.4)(yaml@2.8.1))
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.19.4
+      obsidian:
+        specifier: 'catalog:'
+        version: 1.12.3(@codemirror/state@6.5.2)(@codemirror/view@6.38.1)
+      obsidian-vite-config:
+        specifier: workspace:*
+        version: link:../../packages/obsidian-vitest-config
+      svelte:
+        specifier: ^5.43.12
+        version: 5.43.12
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
@@ -137,7 +164,7 @@ importers:
         version: 0.25.9
       obsidian:
         specifier: 'catalog:'
-        version: 1.10.3(@codemirror/state@6.5.2)(@codemirror/view@6.38.1)
+        version: 1.12.3(@codemirror/state@6.5.2)(@codemirror/view@6.38.1)
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
@@ -158,7 +185,7 @@ importers:
         version: 0.25.9
       obsidian:
         specifier: 'catalog:'
-        version: 1.10.3(@codemirror/state@6.5.2)(@codemirror/view@6.38.1)
+        version: 1.12.3(@codemirror/state@6.5.2)(@codemirror/view@6.38.1)
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
@@ -514,6 +541,21 @@ packages:
     resolution: {integrity: sha512-znp1A/Y1Jj4l/Zy7PX5DZKBE0ZNY+5QBngiE21NJkfSTyzzC5iKNWOtwFXKtIrn7MXEFBck4jD95iBNkGjK92Q==}
     peerDependencies:
       acorn: ^8.9.0
+
+  '@sveltejs/vite-plugin-svelte-inspector@5.0.2':
+    resolution: {integrity: sha512-TZzRTcEtZffICSAoZGkPSl6Etsj2torOVrx6Uw0KpXxrec9Gg6jFWQ60Q3+LmNGfZSxHRCZL7vXVZIWmuV50Ig==}
+    engines: {node: ^20.19 || ^22.12 || >=24}
+    peerDependencies:
+      '@sveltejs/vite-plugin-svelte': ^6.0.0-next.0
+      svelte: ^5.0.0
+      vite: ^6.3.0 || ^7.0.0
+
+  '@sveltejs/vite-plugin-svelte@6.2.4':
+    resolution: {integrity: sha512-ou/d51QSdTyN26D7h6dSpusAKaZkAiGM55/AKYi+9AGZw7q85hElbjK3kEyzXHhLSnRISHOYzVge6x0jRZ7DXA==}
+    engines: {node: ^20.19 || ^22.12 || >=24}
+    peerDependencies:
+      svelte: ^5.0.0
+      vite: ^6.3.0 || ^7.0.0
 
   '@trpc/server@11.4.4':
     resolution: {integrity: sha512-VkJb2xnb4rCynuwlCvgPBh5aM+Dco6fBBIo6lWAdJJRYVwtyE5bxNZBgUvRRz/cFSEAy0vmzLxF7aABDJfK5Rg==}
@@ -874,6 +916,9 @@ packages:
   magic-string@0.30.17:
     resolution: {integrity: sha512-sNPKHvyjVf7gyjwS4xGTaW/mCnF8wnjtifKBEhxfZ7E/S8tQ0rssrwGNn6q8JH/ohItJfSQp9mBtQYuTlH5QnA==}
 
+  magic-string@0.30.21:
+    resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
+
   micromatch@4.0.8:
     resolution: {integrity: sha512-PXwfBhYu0hBCPw8Dn0E+WDYb7af3dSLVWKi3HGv84IdF4TyFoC0ysxFd0Goxw7nSv4T/PzEJQxsYsEiFCKo2BA==}
     engines: {node: '>=8.6'}
@@ -906,11 +951,14 @@ packages:
     engines: {node: ^14.16.0 || >=16.10.0}
     hasBin: true
 
-  obsidian@1.10.3:
-    resolution: {integrity: sha512-VP+ZSxNMG7y6Z+sU9WqLvJAskCfkFrTz2kFHWmmzis+C+4+ELjk/sazwcTHrHXNZlgCeo8YOlM6SOrAFCynNew==}
+  obsidian@1.12.3:
+    resolution: {integrity: sha512-HxWqe763dOqzXjnNiHmAJTRERN8KILBSqxDSEqbeSr7W8R8Jxezzbca+nz1LiiqXnMpM8lV2jzAezw3CZ4xNUw==}
     peerDependencies:
       '@codemirror/state': 6.5.0
       '@codemirror/view': 6.38.6
+
+  obug@2.1.1:
+    resolution: {integrity: sha512-uTqF9MuPraAQ+IsnPf366RG4cP9RtUi7MLO1N3KEc+wb0a6yKpeL0lmk2IB1jY5KHPAlTc6T/JRdC/YqxHNwkQ==}
 
   onetime@7.0.0:
     resolution: {integrity: sha512-VXJjc87FScF88uafS3JllDgvAm+c/Slfz06lorj2uAY34rlUu0Nt+v8wreiImcrgAjjIHp1rXpTDlLOGw29WwQ==}
@@ -1199,6 +1247,14 @@ packages:
       yaml:
         optional: true
 
+  vitefu@1.1.2:
+    resolution: {integrity: sha512-zpKATdUbzbsycPFBN71nS2uzBUQiVnFoOrr2rvqv34S1lcAgMKKkjWleLGeiJlZ8lwCXvtWaRn7R3ZC16SYRuw==}
+    peerDependencies:
+      vite: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0-beta.0
+    peerDependenciesMeta:
+      vite:
+        optional: true
+
   vitest@3.2.4:
     resolution: {integrity: sha512-LUCP5ev3GURDysTWiP47wRRUpLKMOfPh+yKTx3kVIEiu5KOMeqzpnYNsKyOoVrULivR8tLcks4+lga33Whn90A==}
     engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
@@ -1479,6 +1535,23 @@ snapshots:
   '@sveltejs/acorn-typescript@1.0.7(acorn@8.15.0)':
     dependencies:
       acorn: 8.15.0
+
+  '@sveltejs/vite-plugin-svelte-inspector@5.0.2(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.43.12)(vite@7.1.2(@types/node@20.19.4)(yaml@2.8.1)))(svelte@5.43.12)(vite@7.1.2(@types/node@20.19.4)(yaml@2.8.1))':
+    dependencies:
+      '@sveltejs/vite-plugin-svelte': 6.2.4(svelte@5.43.12)(vite@7.1.2(@types/node@20.19.4)(yaml@2.8.1))
+      obug: 2.1.1
+      svelte: 5.43.12
+      vite: 7.1.2(@types/node@20.19.4)(yaml@2.8.1)
+
+  '@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.43.12)(vite@7.1.2(@types/node@20.19.4)(yaml@2.8.1))':
+    dependencies:
+      '@sveltejs/vite-plugin-svelte-inspector': 5.0.2(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.43.12)(vite@7.1.2(@types/node@20.19.4)(yaml@2.8.1)))(svelte@5.43.12)(vite@7.1.2(@types/node@20.19.4)(yaml@2.8.1))
+      deepmerge: 4.3.1
+      magic-string: 0.30.21
+      obug: 2.1.1
+      svelte: 5.43.12
+      vite: 7.1.2(@types/node@20.19.4)(yaml@2.8.1)
+      vitefu: 1.1.2(vite@7.1.2(@types/node@20.19.4)(yaml@2.8.1))
 
   '@trpc/server@11.4.4(typescript@5.9.2)':
     dependencies:
@@ -1835,6 +1908,10 @@ snapshots:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
 
+  magic-string@0.30.21:
+    dependencies:
+      '@jridgewell/sourcemap-codec': 1.5.5
+
   micromatch@4.0.8:
     dependencies:
       braces: 3.0.3
@@ -1860,12 +1937,14 @@ snapshots:
       pkg-types: 2.2.0
       tinyexec: 1.0.1
 
-  obsidian@1.10.3(@codemirror/state@6.5.2)(@codemirror/view@6.38.1):
+  obsidian@1.12.3(@codemirror/state@6.5.2)(@codemirror/view@6.38.1):
     dependencies:
       '@codemirror/state': 6.5.2
       '@codemirror/view': 6.38.1
       '@types/codemirror': 5.60.8
       moment: 2.29.4
+
+  obug@2.1.1: {}
 
   onetime@7.0.0:
     dependencies:
@@ -2140,6 +2219,10 @@ snapshots:
       '@types/node': 20.19.4
       fsevents: 2.3.3
       yaml: 2.8.1
+
+  vitefu@1.1.2(vite@7.1.2(@types/node@20.19.4)(yaml@2.8.1)):
+    optionalDependencies:
+      vite: 7.1.2(@types/node@20.19.4)(yaml@2.8.1)
 
   vitest@3.2.4(@types/node@20.19.4)(yaml@2.8.1):
     dependencies:
