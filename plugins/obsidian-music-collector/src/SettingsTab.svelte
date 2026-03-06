@@ -202,5 +202,41 @@
       {/if}
     </div>
   </div>
+
+  <h2>Discogs</h2>
+
+  <div class="setting-item">
+    <div class="setting-item-info">
+      <div class="setting-item-name">Discogs Username</div>
+      <div class="setting-item-description">
+        Your Discogs profile username.
+      </div>
+    </div>
+    <div class="setting-item-control">
+      <input
+        type="text"
+        value={$pluginSettings.discogsUsername}
+        on:input={(e) => pluginSettings.update((s) => ({ ...s, discogsUsername: (e.target as HTMLInputElement).value }))}
+        placeholder="e.g., myusername"
+      />
+    </div>
+  </div>
+
+  <div class="setting-item">
+    <div class="setting-item-info">
+      <div class="setting-item-name">Discogs Personal Access Token</div>
+      <div class="setting-item-description">
+        Generate at <a href="https://www.discogs.com/settings/developers">discogs.com/settings/developers</a>.
+      </div>
+    </div>
+    <div class="setting-item-control">
+      <input
+        type="password"
+        value={$pluginSettings.discogsToken}
+        on:input={(e) => pluginSettings.update((s) => ({ ...s, discogsToken: (e.target as HTMLInputElement).value }))}
+        placeholder="Token"
+      />
+    </div>
+  </div>
 </div>
 
