@@ -238,5 +238,23 @@
       />
     </div>
   </div>
+
+  <div class="setting-item">
+    <div class="setting-item-info">
+      <div class="setting-item-name">Collection Cache Duration (minutes)</div>
+      <div class="setting-item-description">
+        How long to cache your Discogs collection before auto-refreshing. Use the refresh button in the collection view to update manually at any time.
+      </div>
+    </div>
+    <div class="setting-item-control">
+      <input
+        type="number"
+        min="0"
+        value={$pluginSettings.cacheTTLMinutes}
+        on:input={(e) => pluginSettings.update((s) => ({ ...s, cacheTTLMinutes: Math.max(0, parseInt((e.target as HTMLInputElement).value) || 0) }))}
+        placeholder="60"
+      />
+    </div>
+  </div>
 </div>
 
