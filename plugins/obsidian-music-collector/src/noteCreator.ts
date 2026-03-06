@@ -12,7 +12,9 @@ async function downloadCoverArt(
 ): Promise<string | null> {
   if (!result.coverArtUrl) return null;
   try {
-    const response = await requestUrl({ url: result.coverArtUrl });
+    // Request full-size cover art instead of the 250px thumbnail used in search
+    const fullSizeUrl = result.coverArtUrl.replace(/\/front-\d+$/, "/front");
+    const response = await requestUrl({ url: fullSizeUrl });
     const contentType = response.headers["content-type"] ?? "";
     const ext = contentType.includes("png") ? "png" : "jpg";
     const coverName = sanitizeFilename(`${result.title} Cover Art`);
@@ -31,7 +33,7 @@ async function downloadCoverArt(
 
 function getMusicReplacements(
   result: SearchResult,
-  coverBasename: string | null,
+  coverArt: string | null,
 ): Record<string, string> {
   return {
     title: result.title,
@@ -39,7 +41,7 @@ function getMusicReplacements(
     mbid: result.mbid,
     type: result.primaryType,
     released: result.firstReleaseDate,
-    cover: coverBasename ? `[[${coverBasename}]]` : "",
+    coverArt: coverArt ? `[[${coverArt}]]` : "",
     date: new Date().toISOString().split("T")[0],
   };
 }
@@ -56,14 +58,22 @@ function applyMusicVariables(
 interface TemplaterPlugin {
   templater: {
     parse_template(
-      config: { template_file: TFile | undefined; target_file: TFile; run_mode: number },
+      config: {
+        template_file: TFile | undefined;
+        target_file: TFile;
+        run_mode: number;
+      },
       content: string,
     ): Promise<string>;
     create_running_config(
       template_file: TFile | undefined,
       target_file: TFile,
       run_mode: number,
-    ): { template_file: TFile | undefined; target_file: TFile; run_mode: number };
+    ): {
+      template_file: TFile | undefined;
+      target_file: TFile;
+      run_mode: number;
+    };
   };
 }
 
@@ -101,8 +111,8 @@ export async function createAlbumNote(
     // folder already exists
   }
 
-  const coverBasename = await downloadCoverArt(app, result, filepath);
-  const fullReplacements = getMusicReplacements(result, coverBasename);
+  const coverArt = await downloadCoverArt(app, result, filepath);
+  const fullReplacements = getMusicReplacements(result, coverArt);
 
   let content: string;
   const templateFile = templatePath
@@ -134,7 +144,10 @@ export async function createAlbumNote(
       const parsed = await templater.templater.parse_template(config, content);
       await app.vault.modify(file, parsed);
     } catch (e) {
-      console.error("Templater processing failed, using pre-substituted content:", e);
+      console.error(
+        "Templater processing failed, using pre-substituted content:",
+        e,
+      );
     }
   }
 
@@ -149,7 +162,7 @@ artist: "{{artist}}"
 mbid: "{{mbid}}"
 type: "{{type}}"
 released: "{{released}}"
-cover: "{{cover}}"
+cover: "{{coverArt}}"
 created: {{date}}
 ---
 `;
