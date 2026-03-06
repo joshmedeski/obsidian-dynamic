@@ -3,8 +3,9 @@
   import { searchReleaseGroups } from "./musicbrainz";
 
   export let onSelect: (result: SearchResult) => void;
+  export let initialQuery: string = "";
 
-  let searchTerm = "";
+  let searchTerm = initialQuery;
   let results: SearchResult[] = [];
   let loading = false;
   let searched = false;

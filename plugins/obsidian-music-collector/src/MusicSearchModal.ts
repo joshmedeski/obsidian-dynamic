@@ -6,10 +6,16 @@ import type { SearchResult } from './types';
 export class MusicSearchModal extends Modal {
   private component: any;
   private onSelectCallback: (result: SearchResult) => void;
+  private initialQuery: string;
 
-  constructor(app: App, onSelect: (result: SearchResult) => void) {
+  constructor(
+    app: App,
+    onSelect: (result: SearchResult) => void,
+    initialQuery: string = '',
+  ) {
     super(app);
     this.onSelectCallback = onSelect;
+    this.initialQuery = initialQuery;
   }
 
   onOpen() {
@@ -28,6 +34,7 @@ export class MusicSearchModal extends Modal {
           this.onSelectCallback(result);
           this.close();
         },
+        initialQuery: this.initialQuery,
       },
     });
   }
