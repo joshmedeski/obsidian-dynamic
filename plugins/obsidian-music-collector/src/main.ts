@@ -2,6 +2,7 @@ import { type App, Plugin, PluginSettingTab } from 'obsidian';
 import { mount, unmount } from 'svelte';
 import { MusicSearchModal } from './MusicSearchModal';
 import SettingsTab from './SettingsTab.svelte';
+import { DiscogsCollectionView, DISCOGS_VIEW_TYPE } from './DiscogsCollectionView';
 import { createAlbumNote } from './noteCreator';
 import { initStore } from './store';
 import { DEFAULT_SETTINGS, type MusicCollectorSettings } from './types';
@@ -39,6 +40,15 @@ export default class MusicCollectorPlugin extends Plugin {
     await this.loadSettings();
     initStore(this);
 
+    this.registerView(DISCOGS_VIEW_TYPE, (leaf) => {
+      return new DiscogsCollectionView(leaf, (release) => {
+        const query = `${release.artist} - ${release.title}`;
+        new MusicSearchModal(this.app, (result) => {
+          createAlbumNote(this.app, result, this.settings);
+        }, query).open();
+      });
+    });
+
     this.addSettingTab(new MusicCollectorSettingTab(this.app, this));
 
     this.addCommand({
@@ -48,6 +58,21 @@ export default class MusicCollectorPlugin extends Plugin {
         new MusicSearchModal(this.app, (result) => {
           createAlbumNote(this.app, result, this.settings);
         }).open();
+      },
+    });
+
+    this.addCommand({
+      id: 'open-discogs-collection',
+      name: 'Open Discogs Collection',
+      callback: async () => {
+        const existing = this.app.workspace.getLeavesOfType(DISCOGS_VIEW_TYPE);
+        if (existing.length > 0) {
+          this.app.workspace.revealLeaf(existing[0]);
+          return;
+        }
+        const leaf = this.app.workspace.getLeaf(true);
+        await leaf.setViewState({ type: DISCOGS_VIEW_TYPE, active: true });
+        this.app.workspace.revealLeaf(leaf);
       },
     });
   }
