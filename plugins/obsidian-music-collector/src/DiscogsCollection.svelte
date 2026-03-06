@@ -6,6 +6,8 @@
     discogsLoading,
     discogsError,
     pluginSettings,
+    saveDiscogsCache,
+    getDiscogsCache,
   } from "./store";
   import { fetchDiscogsCollection } from "./discogs";
 
@@ -49,17 +51,30 @@
     return true;
   });
 
-  async function loadCollection() {
+  function isCacheStale(): boolean {
+    const cache = getDiscogsCache();
+    if (!cache?.lastFetched) return true;
+    const ttlMs = $pluginSettings.cacheTTLMinutes * 60 * 1000;
+    return Date.now() - cache.lastFetched > ttlMs;
+  }
+
+  async function loadCollection(force = false) {
     const { discogsUsername, discogsToken } = $pluginSettings;
     if (!discogsUsername || !discogsToken) {
       discogsError.set("Configure your Discogs username and token in settings.");
       return;
     }
+
+    if (!force && !isCacheStale() && $discogsCollection.length > 0) {
+      return;
+    }
+
     discogsLoading.set(true);
     discogsError.set("");
     try {
       const releases = await fetchDiscogsCollection(discogsUsername, discogsToken);
       discogsCollection.set(releases);
+      await saveDiscogsCache(releases);
     } catch (e: any) {
       discogsError.set(e?.message ?? "Failed to fetch collection");
     }
@@ -75,6 +90,8 @@
 
   // Load on mount if not already loaded
   if ($discogsCollection.length === 0) {
+    loadCollection();
+  } else if (isCacheStale()) {
     loadCollection();
   }
 </script>
@@ -101,7 +118,7 @@
         Not in Vault ({$discogsCollection.filter((r) => !isInVault(r, vaultMatches)).length})
       </button>
     </div>
-    <button class="discogs-refresh clickable-icon" on:click={loadCollection} title="Refresh collection">
+    <button class="discogs-refresh clickable-icon" on:click={() => loadCollection(true)} title="Refresh collection">
       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="23 4 23 10 17 10"/>
         <polyline points="1 20 1 14 7 14"/>
