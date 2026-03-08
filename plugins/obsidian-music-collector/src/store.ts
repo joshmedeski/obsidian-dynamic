@@ -45,6 +45,15 @@ export async function saveMBMatches(matches: MBMatchMap) {
   await plugin.saveMBMatches(matches);
 }
 
+export async function removeMBMatch(discogsId: number) {
+  mbMatches.update((m) => {
+    const next = { ...m };
+    delete next[discogsId];
+    return next;
+  });
+  await plugin.saveMBMatches(get(mbMatches));
+}
+
 export function triggerMBScan() {
   const releases = get(discogsCollection);
   if (releases.length === 0) return;

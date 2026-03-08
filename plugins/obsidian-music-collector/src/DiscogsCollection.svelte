@@ -11,6 +11,7 @@
     vaultRevision,
     mbMatches,
     mbScanState,
+    removeMBMatch,
   } from "./store";
   import { triggerMBScan } from "./store";
   import { stopScan } from "./mbScanner";
@@ -388,13 +389,44 @@
                 <div class="mb-spinner"></div>
               </div>
             {:else if $mbMatches[release.id]?.coverArtUrl}
-              <img
-                class="mb-cover-overlay"
-                src={$mbMatches[release.id].coverArtUrl}
-                alt="MusicBrainz cover"
-                title={$mbMatches[release.id].title}
-                loading="lazy"
-              />
+              <div class="mb-match-container">
+                <img
+                  class="mb-cover-overlay"
+                  src={$mbMatches[release.id].coverArtUrl}
+                  alt="MusicBrainz cover"
+                  title={$mbMatches[release.id].title}
+                  loading="lazy"
+                />
+                <button
+                  class="mb-remove-btn"
+                  title="Remove MusicBrainz match"
+                  on:click|stopPropagation={() => removeMBMatch(release.id)}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+            {:else if $mbMatches[release.id]}
+              <div class="mb-match-container">
+                <div
+                  class="mb-cover-overlay mb-matched-no-art"
+                  title={$mbMatches[release.id].title}
+                >
+                  MB
+                </div>
+                <button
+                  class="mb-remove-btn"
+                  title="Remove MusicBrainz match"
+                  on:click|stopPropagation={() => removeMBMatch(release.id)}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
             {:else if !$mbMatches[release.id]}
               <div
                 class="mb-cover-overlay mb-no-match"
@@ -721,6 +753,55 @@
     border-top-color: var(--text-muted);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
+  }
+
+  .mb-match-container {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    width: 22%;
+    aspect-ratio: 1/1;
+  }
+
+  .mb-match-container .mb-cover-overlay {
+    position: static;
+    width: 100%;
+    height: 100%;
+  }
+
+  .mb-remove-btn {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: none;
+    background: var(--text-error);
+    color: white;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+  }
+
+  .mb-match-container:hover .mb-remove-btn,
+  .discogs-card:hover .mb-remove-btn {
+    display: flex;
+  }
+
+  .mb-matched-no-art {
+    background: var(--interactive-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-on-accent);
+    font-size: 0.6rem;
+    font-weight: 700;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   }
 
   .mb-no-match {
