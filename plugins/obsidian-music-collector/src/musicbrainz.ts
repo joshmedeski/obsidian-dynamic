@@ -1,5 +1,5 @@
 import { requestUrl } from 'obsidian';
-import type { MBSearchResponse, SearchResult } from './types';
+import type { MBReleaseGroup, MBSearchResponse, SearchResult } from './types';
 
 const USER_AGENT = 'ObsidianMusicCollector/1.0.0 (obsidian-music-collector)';
 const API_BASE = 'https://musicbrainz.org/ws/2';
@@ -21,7 +21,7 @@ async function rateLimitedRequest(url: string): Promise<any> {
   });
 }
 
-async function checkCoverArt(mbid: string): Promise<string | null> {
+export async function checkCoverArt(mbid: string): Promise<string | null> {
   const url = `${COVER_ART_BASE}/${mbid}/front-250`;
   try {
     await requestUrl({ url, method: 'HEAD' });
@@ -31,7 +31,7 @@ async function checkCoverArt(mbid: string): Promise<string | null> {
   }
 }
 
-function joinArtistCredits(
+export function joinArtistCredits(
   credits: { name: string; joinphrase?: string }[]
 ): string {
   return credits.map((c) => c.name + (c.joinphrase ?? '')).join('');
@@ -64,4 +64,17 @@ export async function searchReleaseGroups(
   );
 
   return results;
+}
+
+export async function searchReleaseGroupsLight(
+  query: string
+): Promise<MBReleaseGroup[]> {
+  if (!query.trim()) return [];
+
+  const encodedQuery = encodeURIComponent(query);
+  const url = `${API_BASE}/release-group/?query=${encodedQuery}&limit=5&fmt=json`;
+
+  const response = await rateLimitedRequest(url);
+  const data: MBSearchResponse = response.json;
+  return data['release-groups'] ?? [];
 }

@@ -21,6 +21,7 @@ function toDiscogsRelease(item: DiscogsCollectionItem): DiscogsRelease {
     title: info.title,
     artist: joinArtists(info.artists),
     year: info.year,
+    dateAdded: item.date_added,
     coverImageUrl: info.cover_image,
     discogsUrl: `https://www.discogs.com/release/${info.id}`,
   };

@@ -69,6 +69,7 @@ export interface DiscogsRelease {
   title: string;
   artist: string;
   year: number;
+  dateAdded: string;
   coverImageUrl: string;
   discogsUrl: string;
 }
@@ -77,6 +78,18 @@ export interface DiscogsCache {
   releases: DiscogsRelease[];
   lastFetched: number; // Unix timestamp ms
 }
+
+export interface MBMatch {
+  mbid: string;
+  title: string;
+  artist: string;
+  primaryType: string;
+  firstReleaseDate: string;
+  coverArtUrl: string | null;
+  matchedAt: number;
+}
+
+export type MBMatchMap = Record<number, MBMatch>;
 
 export interface MusicCollectorSettings {
   outputFolder: string;

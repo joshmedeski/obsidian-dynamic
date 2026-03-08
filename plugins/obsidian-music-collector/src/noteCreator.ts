@@ -34,6 +34,7 @@ async function downloadCoverArt(
 function getMusicReplacements(
   result: SearchResult,
   coverArt: string | null,
+  extra: Record<string, string> = {},
 ): Record<string, string> {
   return {
     title: result.title,
@@ -43,6 +44,7 @@ function getMusicReplacements(
     released: result.firstReleaseDate,
     coverArt: coverArt ? `[[${coverArt}]]` : "",
     date: new Date().toISOString().split("T")[0],
+    ...extra,
   };
 }
 
@@ -87,9 +89,10 @@ export async function createAlbumNote(
   app: App,
   result: SearchResult,
   settings: MusicCollectorSettings,
+  extra: Record<string, string> = {},
 ): Promise<void> {
   const { outputFolder, templatePath, filenameFormat } = settings;
-  const replacements = getMusicReplacements(result, null);
+  const replacements = getMusicReplacements(result, null, extra);
   const resolvedName = applyMusicVariables(
     filenameFormat || "{{artist}} - {{title}}",
     replacements,
@@ -112,7 +115,7 @@ export async function createAlbumNote(
   }
 
   const coverArt = await downloadCoverArt(app, result, filepath);
-  const fullReplacements = getMusicReplacements(result, coverArt);
+  const fullReplacements = getMusicReplacements(result, coverArt, extra);
 
   let content: string;
   const templateFile = templatePath

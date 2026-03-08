@@ -4,8 +4,8 @@ import { MusicSearchModal } from './MusicSearchModal';
 import SettingsTab from './SettingsTab.svelte';
 import { DiscogsCollectionView, DISCOGS_VIEW_TYPE } from './DiscogsCollectionView';
 import { createAlbumNote } from './noteCreator';
-import { initStore } from './store';
-import { DEFAULT_SETTINGS, type DiscogsCache, type MusicCollectorSettings } from './types';
+import { initStore, invalidateVault, triggerMBScan } from './store';
+import { DEFAULT_SETTINGS, type DiscogsCache, type MBMatchMap, type MusicCollectorSettings } from './types';
 
 class MusicCollectorSettingTab extends PluginSettingTab {
   component: any;
@@ -36,6 +36,7 @@ class MusicCollectorSettingTab extends PluginSettingTab {
 export default class MusicCollectorPlugin extends Plugin {
   settings: MusicCollectorSettings = DEFAULT_SETTINGS;
   discogsCache: DiscogsCache | null = null;
+  mbMatches: MBMatchMap = {};
 
   async onload() {
     await this.loadSettings();
@@ -44,8 +45,13 @@ export default class MusicCollectorPlugin extends Plugin {
     this.registerView(DISCOGS_VIEW_TYPE, (leaf) => {
       return new DiscogsCollectionView(leaf, (release) => {
         const query = `${release.artist} - ${release.title}`;
-        new MusicSearchModal(this.app, (result) => {
-          createAlbumNote(this.app, result, this.settings);
+        const purchased = release.dateAdded
+          ? new Date(release.dateAdded).toISOString().split('T')[0]
+          : '';
+        const discogsId = String(release.id);
+        new MusicSearchModal(this.app, async (result) => {
+          await createAlbumNote(this.app, result, this.settings, { purchased, discogsId });
+          invalidateVault();
         }, query).open();
       });
     });
@@ -76,24 +82,44 @@ export default class MusicCollectorPlugin extends Plugin {
         this.app.workspace.revealLeaf(leaf);
       },
     });
+
+    this.addCommand({
+      id: 'scan-musicbrainz-matches',
+      name: 'Scan MusicBrainz Matches',
+      callback: () => triggerMBScan(),
+    });
   }
 
   async loadSettings() {
     const data = await this.loadData();
     if (data) {
-      const { discogsCache, ...rest } = data;
+      const { discogsCache, mbMatches, ...rest } = data;
       this.settings = { ...DEFAULT_SETTINGS, ...rest };
       this.discogsCache = discogsCache ?? null;
+      this.mbMatches = mbMatches ?? {};
     }
   }
 
+  private async persistAll() {
+    await this.saveData({
+      ...this.settings,
+      discogsCache: this.discogsCache,
+      mbMatches: this.mbMatches,
+    });
+  }
+
   async saveSettings() {
-    await this.saveData({ ...this.settings, discogsCache: this.discogsCache });
+    await this.persistAll();
   }
 
   async saveCache(cache: DiscogsCache) {
     this.discogsCache = cache;
-    await this.saveData({ ...this.settings, discogsCache: this.discogsCache });
+    await this.persistAll();
+  }
+
+  async saveMBMatches(matches: MBMatchMap) {
+    this.mbMatches = matches;
+    await this.persistAll();
   }
 
   onunload() {}
