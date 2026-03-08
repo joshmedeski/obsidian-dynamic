@@ -4,8 +4,10 @@ import { MusicSearchModal } from './MusicSearchModal';
 import SettingsTab from './SettingsTab.svelte';
 import { DiscogsCollectionView, DISCOGS_VIEW_TYPE } from './DiscogsCollectionView';
 import { createAlbumNote } from './noteCreator';
-import { initStore, invalidateVault, triggerMBScan } from './store';
-import { DEFAULT_SETTINGS, type DiscogsCache, type MBMatchMap, type MusicCollectorSettings } from './types';
+import { initStore, invalidateVault, saveMBMatches, triggerMBScan } from './store';
+import { mbMatches } from './mbScanner';
+import { get } from 'svelte/store';
+import { DEFAULT_SETTINGS, type DiscogsCache, type MBMatch, type MBMatchMap, type MusicCollectorSettings } from './types';
 
 class MusicCollectorSettingTab extends PluginSettingTab {
   component: any;
@@ -45,13 +47,18 @@ export default class MusicCollectorPlugin extends Plugin {
     this.registerView(DISCOGS_VIEW_TYPE, (leaf) => {
       return new DiscogsCollectionView(leaf, (release) => {
         const query = `${release.artist} - ${release.title}`;
-        const purchased = release.dateAdded
-          ? new Date(release.dateAdded).toISOString().split('T')[0]
-          : '';
-        const discogsId = String(release.id);
         new MusicSearchModal(this.app, async (result) => {
-          await createAlbumNote(this.app, result, this.settings, { purchased, discogsId });
-          invalidateVault();
+          const match: MBMatch = {
+            mbid: result.mbid,
+            title: result.title,
+            artist: result.artist,
+            primaryType: result.primaryType,
+            firstReleaseDate: result.firstReleaseDate,
+            coverArtUrl: result.coverArtUrl,
+            matchedAt: Date.now(),
+          };
+          mbMatches.update((m) => ({ ...m, [release.id]: match }));
+          await saveMBMatches(get(mbMatches));
         }, query).open();
       });
     });

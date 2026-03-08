@@ -19,8 +19,9 @@
   export let app: App;
   export let onImport: (release: DiscogsRelease) => void;
 
-  type FilterTab = "all" | "in-vault" | "not-in-vault";
-  let activeTab: FilterTab = "all";
+  type TriFilter = "all" | "yes" | "no";
+  let vaultFilter: TriFilter = "all";
+  let mbFilter: TriFilter = "all";
 
   type SortField = "artist" | "releaseDate" | "dateAdded";
   type SortOrder = "asc" | "desc";
@@ -64,10 +65,16 @@
   }
 
   $: vaultMatches = ($vaultRevision, getVaultMatches());
+  function hasMBMatch(release: DiscogsRelease): boolean {
+    return !!$mbMatches[release.id];
+  }
+
   $: filteredReleases = $discogsCollection
     .filter((r) => {
-      if (activeTab === "in-vault") return isInVault(r, vaultMatches);
-      if (activeTab === "not-in-vault") return !isInVault(r, vaultMatches);
+      if (vaultFilter === "yes" && !isInVault(r, vaultMatches)) return false;
+      if (vaultFilter === "no" && isInVault(r, vaultMatches)) return false;
+      if (mbFilter === "yes" && !hasMBMatch(r)) return false;
+      if (mbFilter === "no" && hasMBMatch(r)) return false;
       return true;
     })
     .sort((a, b) => {
@@ -134,28 +141,42 @@
 
 <div class="discogs-collection-view">
   <div class="discogs-header">
-    <div class="discogs-tabs">
-      <button
-        class="discogs-tab {activeTab === 'all' ? 'is-active' : ''}"
-        on:click={() => (activeTab = "all")}
-      >
-        All ({$discogsCollection.length})
-      </button>
-      <button
-        class="discogs-tab {activeTab === 'in-vault' ? 'is-active' : ''}"
-        on:click={() => (activeTab = "in-vault")}
-      >
-        In Vault ({$discogsCollection.filter((r) => isInVault(r, vaultMatches))
-          .length})
-      </button>
-      <button
-        class="discogs-tab {activeTab === 'not-in-vault' ? 'is-active' : ''}"
-        on:click={() => (activeTab = "not-in-vault")}
-      >
-        Not in Vault ({$discogsCollection.filter(
-          (r) => !isInVault(r, vaultMatches),
-        ).length})
-      </button>
+    <div class="discogs-filters">
+      <div class="filter-group">
+        <span class="filter-label">Vault</span>
+        <div class="filter-options">
+          <button
+            class="filter-btn {vaultFilter === 'all' ? 'is-active' : ''}"
+            on:click={() => (vaultFilter = "all")}>All</button
+          >
+          <button
+            class="filter-btn {vaultFilter === 'yes' ? 'is-active' : ''}"
+            on:click={() => (vaultFilter = "yes")}>In</button
+          >
+          <button
+            class="filter-btn {vaultFilter === 'no' ? 'is-active' : ''}"
+            on:click={() => (vaultFilter = "no")}>Not in</button
+          >
+        </div>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">MB</span>
+        <div class="filter-options">
+          <button
+            class="filter-btn {mbFilter === 'all' ? 'is-active' : ''}"
+            on:click={() => (mbFilter = "all")}>All</button
+          >
+          <button
+            class="filter-btn {mbFilter === 'yes' ? 'is-active' : ''}"
+            on:click={() => (mbFilter = "yes")}>Matched</button
+          >
+          <button
+            class="filter-btn {mbFilter === 'no' ? 'is-active' : ''}"
+            on:click={() => (mbFilter = "no")}>No match</button
+          >
+        </div>
+      </div>
+      <span class="filter-count">{filteredReleases.length}/{$discogsCollection.length}</span>
     </div>
     <div class="discogs-controls">
       <select class="discogs-sort-select" bind:value={sortField}>
@@ -375,7 +396,12 @@
                 loading="lazy"
               />
             {:else if !$mbMatches[release.id]}
-              <div class="mb-cover-overlay mb-no-match" title="No MusicBrainz match">?</div>
+              <div
+                class="mb-cover-overlay mb-no-match"
+                title="No MusicBrainz match"
+              >
+                ?
+              </div>
             {/if}
           </div>
           <div class="discogs-info">
@@ -411,28 +437,58 @@
     gap: 0.5rem;
   }
 
-  .discogs-tabs {
+  .discogs-filters {
     display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .filter-group {
+    display: flex;
+    align-items: center;
     gap: 0.25rem;
   }
 
-  .discogs-tab {
-    padding: 0.4rem 0.8rem;
-    border: none;
+  .filter-label {
+    font-size: 0.75rem;
+    color: var(--text-faint);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .filter-options {
+    display: flex;
+    gap: 2px;
+    background: var(--background-secondary);
     border-radius: 6px;
+    padding: 2px;
+  }
+
+  .filter-btn {
+    padding: 0.25rem 0.5rem;
+    border: none;
+    border-radius: 4px;
     background: transparent;
     color: var(--text-muted);
     cursor: pointer;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
   }
 
-  .discogs-tab.is-active {
+  .filter-btn.is-active {
     background: var(--interactive-accent);
     color: var(--text-on-accent);
   }
 
-  .discogs-tab:hover:not(.is-active) {
+  .filter-btn:hover:not(.is-active) {
     background: var(--background-modifier-hover);
+  }
+
+  .filter-count {
+    font-size: 0.75rem;
+    color: var(--text-faint);
+    white-space: nowrap;
   }
 
   .discogs-controls {
@@ -484,6 +540,7 @@
     gap: 1rem;
     overflow-y: auto;
     flex: 1;
+    align-items: start;
   }
 
   .discogs-card {
@@ -667,7 +724,7 @@
   }
 
   .mb-no-match {
-    background: var(--background-modifier-border);
+    background: #000000;
     display: flex;
     align-items: center;
     justify-content: center;
