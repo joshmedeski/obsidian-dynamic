@@ -3,6 +3,7 @@ import type MusicCollectorPlugin from './main';
 import { DEFAULT_SETTINGS, type MusicCollectorSettings } from './types';
 import type { DiscogsCache, DiscogsRelease, MBMatchMap } from './types';
 import { mbMatches, startScan, mbScanState } from './mbScanner';
+import { bulkImportState, startBulkImport, stopBulkImport } from './bulkImporter';
 
 export const pluginSettings = writable<MusicCollectorSettings>(DEFAULT_SETTINGS);
 export const discogsCollection = writable<DiscogsRelease[]>([]);
@@ -10,6 +11,7 @@ export const discogsLoading = writable<boolean>(false);
 export const discogsError = writable<string>('');
 export const vaultRevision = writable<number>(0);
 export { mbMatches, mbScanState };
+export { bulkImportState, stopBulkImport };
 
 export function invalidateVault() {
   vaultRevision.update((n) => n + 1);
@@ -58,6 +60,13 @@ export function triggerMBScan() {
   const releases = get(discogsCollection);
   if (releases.length === 0) return;
   startScan(releases, saveMBMatches);
+}
+
+export function triggerBulkImport(sortedReleases?: DiscogsRelease[]) {
+  const releases = sortedReleases ?? get(discogsCollection);
+  if (releases.length === 0 || !plugin) return;
+  const matches = get(mbMatches);
+  startBulkImport(plugin.app, plugin.settings, releases, matches);
 }
 
 pluginSettings.subscribe((value) => {

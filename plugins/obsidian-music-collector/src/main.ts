@@ -4,7 +4,8 @@ import { MusicSearchModal } from './MusicSearchModal';
 import SettingsTab from './SettingsTab.svelte';
 import { DiscogsCollectionView, DISCOGS_VIEW_TYPE } from './DiscogsCollectionView';
 import { createAlbumNote } from './noteCreator';
-import { initStore, invalidateVault, saveMBMatches, triggerMBScan } from './store';
+import { initStore, invalidateVault, saveMBMatches, triggerMBScan, triggerBulkImport } from './store';
+import { repairNoteFrontmatter } from './noteRepair';
 import { mbMatches } from './mbScanner';
 import { get } from 'svelte/store';
 import { DEFAULT_SETTINGS, type DiscogsCache, type MBMatch, type MBMatchMap, type MusicCollectorSettings } from './types';
@@ -94,6 +95,18 @@ export default class MusicCollectorPlugin extends Plugin {
       id: 'scan-musicbrainz-matches',
       name: 'Scan MusicBrainz Matches',
       callback: () => triggerMBScan(),
+    });
+
+    this.addCommand({
+      id: 'import-all-matched',
+      name: 'Import All Matched',
+      callback: () => triggerBulkImport(),
+    });
+
+    this.addCommand({
+      id: 'repair-frontmatter',
+      name: 'Repair note frontmatter',
+      callback: () => repairNoteFrontmatter(this.app, this.settings, this.discogsCache),
     });
   }
 

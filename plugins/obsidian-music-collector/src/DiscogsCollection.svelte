@@ -12,10 +12,14 @@
     mbMatches,
     mbScanState,
     removeMBMatch,
+    bulkImportState,
+    triggerBulkImport,
+    stopBulkImport,
   } from "./store";
   import { triggerMBScan } from "./store";
   import { stopScan } from "./mbScanner";
   import { fetchDiscogsCollection } from "./discogs";
+  import { getVaultMatches, isInVault, findVaultFile } from "./vaultMatcher";
 
   export let app: App;
   export let onImport: (release: DiscogsRelease) => void;
@@ -29,51 +33,16 @@
   let sortField: SortField = "dateAdded";
   let sortOrder: SortOrder = "desc";
 
-  function getVaultMatches(): { discogsIds: Set<string>; keys: Set<string> } {
-    const folder = $pluginSettings.outputFolder;
-    const discogsIds = new Set<string>();
-    const keys = new Set<string>();
-    const files = app.vault
-      .getFiles()
-      .filter((f) => f.path.startsWith(folder + "/"));
-    for (const file of files) {
-      const cache = app.metadataCache.getFileCache(file);
-      const fm = cache?.frontmatter;
-      if (fm?.discogsId) {
-        discogsIds.add(String(fm.discogsId));
-      }
-      if (fm?.title && fm?.artist) {
-        keys.add(`${fm.artist.toLowerCase()}|||${fm.title.toLowerCase()}`);
-      }
-      const name = file.basename;
-      if (name.includes(" - ")) {
-        keys.add(name.toLowerCase());
-      }
-    }
-    return { discogsIds, keys };
-  }
-
-  function isInVault(
-    release: DiscogsRelease,
-    matches: { discogsIds: Set<string>; keys: Set<string> },
-  ): boolean {
-    if (matches.discogsIds.has(String(release.id))) return true;
-    const fmKey = `${release.artist.toLowerCase()}|||${release.title.toLowerCase()}`;
-    if (matches.keys.has(fmKey)) return true;
-    const filenameKey = `${release.artist} - ${release.title}`.toLowerCase();
-    if (matches.keys.has(filenameKey)) return true;
-    return false;
-  }
-
-  $: vaultMatches = ($vaultRevision, getVaultMatches());
+  $: vaultMatches =
+    ($vaultRevision, getVaultMatches(app, $pluginSettings.outputFolder));
   function hasMBMatch(release: DiscogsRelease): boolean {
     return !!$mbMatches[release.id];
   }
 
   $: filteredReleases = $discogsCollection
     .filter((r) => {
-      if (vaultFilter === "yes" && !isInVault(r, vaultMatches)) return false;
-      if (vaultFilter === "no" && isInVault(r, vaultMatches)) return false;
+      if (vaultFilter === "yes" && !isInVault(r, vaultMatches, $mbMatches[r.id])) return false;
+      if (vaultFilter === "no" && isInVault(r, vaultMatches, $mbMatches[r.id])) return false;
       if (mbFilter === "yes" && !hasMBMatch(r)) return false;
       if (mbFilter === "no" && hasMBMatch(r)) return false;
       return true;
@@ -89,6 +58,10 @@
       }
       return sortOrder === "asc" ? cmp : -cmp;
     });
+
+  $: importableCount = $discogsCollection.filter(
+    (r) => $mbMatches[r.id] && !isInVault(r, vaultMatches, $mbMatches[r.id]),
+  ).length;
 
   function isCacheStale(): boolean {
     const cache = getDiscogsCache();
@@ -132,6 +105,22 @@
     if (placeholder) placeholder.style.display = "flex";
   }
 
+  function handleCardClick(release: DiscogsRelease) {
+    if (isInVault(release, vaultMatches, $mbMatches[release.id])) {
+      const file = findVaultFile(
+        app,
+        $pluginSettings.outputFolder,
+        release,
+        $mbMatches[release.id],
+      );
+      if (file) {
+        app.workspace.getLeaf(false).openFile(file);
+        return;
+      }
+    }
+    onImport(release);
+  }
+
   // Load on mount if not already loaded
   if ($discogsCollection.length === 0) {
     loadCollection();
@@ -151,12 +140,12 @@
             on:click={() => (vaultFilter = "all")}>All</button
           >
           <button
-            class="filter-btn {vaultFilter === 'yes' ? 'is-active' : ''}"
-            on:click={() => (vaultFilter = "yes")}>In</button
-          >
-          <button
             class="filter-btn {vaultFilter === 'no' ? 'is-active' : ''}"
             on:click={() => (vaultFilter = "no")}>Not in</button
+          >
+          <button
+            class="filter-btn {vaultFilter === 'yes' ? 'is-active' : ''}"
+            on:click={() => (vaultFilter = "yes")}>In</button
           >
         </div>
       </div>
@@ -177,7 +166,17 @@
           >
         </div>
       </div>
-      <span class="filter-count">{filteredReleases.length}/{$discogsCollection.length}</span>
+      <span class="filter-count"
+        >{filteredReleases.length}/{$discogsCollection.length}</span
+      >
+      {#if importableCount > 0 && $bulkImportState.status !== "importing"}
+        <button
+          class="filter-btn is-active bulk-import-btn"
+          on:click={() => triggerBulkImport(filteredReleases)}
+          title="Import all {importableCount} matched releases not in vault"
+          >Import {importableCount}</button
+        >
+      {/if}
     </div>
     <div class="discogs-controls">
       <select class="discogs-sort-select" bind:value={sortField}>
@@ -302,6 +301,40 @@
     <div class="mb-scan-current">{$mbScanState.currentRelease}</div>
   {/if}
 
+  {#if $bulkImportState.status === "importing"}
+    <div class="mb-scan-bar">
+      <div
+        class="mb-scan-bar-fill bulk-import-bar-fill"
+        style="width: {$bulkImportState.total > 0
+          ? ($bulkImportState.processed / $bulkImportState.total) * 100
+          : 0}%"
+      ></div>
+    </div>
+    <div class="bulk-import-status">
+      <span class="mb-scan-current">{$bulkImportState.currentRelease}</span>
+      <span class="bulk-import-counts">
+        {$bulkImportState.created} created / {$bulkImportState.skipped} skipped /
+        {$bulkImportState.failed} failed
+      </span>
+      <button
+        class="discogs-refresh clickable-icon"
+        on:click={stopBulkImport}
+        title="Stop import"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          stroke="none"
+        >
+          <rect x="6" y="6" width="12" height="12" rx="2" />
+        </svg>
+      </button>
+    </div>
+  {/if}
+
   {#if $discogsLoading}
     <div class="discogs-loading">
       <div class="loading-spinner"></div>
@@ -322,53 +355,59 @@
       {#each filteredReleases as release}
         <!-- svelte-ignore a11y-click-events-have-key-events -->
         <!-- svelte-ignore a11y-no-static-element-interactions -->
-        <div class="discogs-card" on:click={() => onImport(release)}>
-          <div class="cover-container">
-            {#if release.coverImageUrl}
-              <img
-                src={release.coverImageUrl}
-                alt={release.title}
-                loading="lazy"
-                on:error={handleImageError}
-              />
-              <div class="cover-placeholder" style="display: none;">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="48"
-                  height="48"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M9 18V5l12-2v13" />
-                  <circle cx="6" cy="18" r="3" />
-                  <circle cx="18" cy="16" r="3" />
-                </svg>
+        <div class="discogs-card" on:click={() => handleCardClick(release)}>
+          <div class="artwork-row">
+            <div class="cover-container">
+              {#if release.coverImageUrl}
+                <img
+                  src={release.coverImageUrl}
+                  alt={release.title}
+                  loading="lazy"
+                  on:error={handleImageError}
+                />
+                <div class="cover-placeholder" style="display: none;">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="48"
+                    height="48"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M9 18V5l12-2v13" />
+                    <circle cx="6" cy="18" r="3" />
+                    <circle cx="18" cy="16" r="3" />
+                  </svg>
+                </div>
+              {:else}
+                <div class="cover-placeholder">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="48"
+                    height="48"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M9 18V5l12-2v13" />
+                    <circle cx="6" cy="18" r="3" />
+                    <circle cx="18" cy="16" r="3" />
+                  </svg>
+                </div>
+              {/if}
+            </div>
+            {#if $bulkImportState.currentReleaseId === release.id}
+              <div class="artwork-arrow">
+                <div class="arrow-spinner"></div>
               </div>
-            {:else}
-              <div class="cover-placeholder">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="48"
-                  height="48"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M9 18V5l12-2v13" />
-                  <circle cx="6" cy="18" r="3" />
-                  <circle cx="18" cy="16" r="3" />
-                </svg>
-              </div>
-            {/if}
-            {#if isInVault(release, vaultMatches)}
-              <div class="vault-badge" title="In vault">
+            {:else if isInVault(release, vaultMatches, $mbMatches[release.id])}
+              <span class="artwork-arrow artwork-check" title="In vault">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="16"
@@ -382,59 +421,79 @@
                 >
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
-              </div>
+              </span>
+            {:else}
+              <span class="artwork-arrow">→</span>
             {/if}
-            {#if $mbScanState.currentReleaseId === release.id}
-              <div class="mb-cover-overlay mb-scanning" title="Scanning...">
-                <div class="mb-spinner"></div>
-              </div>
-            {:else if $mbMatches[release.id]?.coverArtUrl}
-              <div class="mb-match-container">
+            <div class="cover-container mb-cover-container">
+              {#if $mbScanState.currentReleaseId === release.id}
+                <div class="mb-scanning-fill" title="Scanning...">
+                  <div class="mb-spinner"></div>
+                </div>
+              {:else if $mbMatches[release.id]?.coverArtUrl}
                 <img
-                  class="mb-cover-overlay"
                   src={$mbMatches[release.id].coverArtUrl}
                   alt="MusicBrainz cover"
                   title={$mbMatches[release.id].title}
                   loading="lazy"
                 />
-                <button
-                  class="mb-remove-btn"
-                  title="Remove MusicBrainz match"
-                  on:click|stopPropagation={() => removeMBMatch(release.id)}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
-              </div>
-            {:else if $mbMatches[release.id]}
-              <div class="mb-match-container">
+                {#if !isInVault(release, vaultMatches, $mbMatches[release.id])}
+                  <button
+                    class="mb-remove-btn"
+                    title="Remove MusicBrainz match"
+                    on:click|stopPropagation={() => removeMBMatch(release.id)}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="10"
+                      height="10"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                {/if}
+              {:else if $mbMatches[release.id]}
                 <div
-                  class="mb-cover-overlay mb-matched-no-art"
+                  class="mb-matched-no-art"
                   title={$mbMatches[release.id].title}
                 >
                   MB
                 </div>
-                <button
-                  class="mb-remove-btn"
-                  title="Remove MusicBrainz match"
-                  on:click|stopPropagation={() => removeMBMatch(release.id)}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
-              </div>
-            {:else if !$mbMatches[release.id]}
-              <div
-                class="mb-cover-overlay mb-no-match"
-                title="No MusicBrainz match"
-              >
-                ?
-              </div>
-            {/if}
+                {#if !isInVault(release, vaultMatches, $mbMatches[release.id])}
+                  <button
+                    class="mb-remove-btn"
+                    title="Remove MusicBrainz match"
+                    on:click|stopPropagation={() => removeMBMatch(release.id)}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="10"
+                      height="10"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                {/if}
+              {:else}
+                <div class="mb-no-match-fill" title="No MusicBrainz match">
+                  ?
+                </div>
+              {/if}
+            </div>
           </div>
           <div class="discogs-info">
             <div class="discogs-title" title={release.title}>
@@ -568,7 +627,7 @@
 
   .discogs-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
     gap: 1rem;
     overflow-y: auto;
     flex: 1;
@@ -588,12 +647,41 @@
     background-color: var(--background-modifier-hover);
   }
 
+  .artwork-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 8px;
+  }
+
+  .artwork-arrow {
+    color: var(--text-faint);
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+  }
+
+  .artwork-check {
+    color: var(--interactive-accent);
+  }
+
+  .arrow-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--background-modifier-border);
+    border-top-color: var(--interactive-accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
   .cover-container {
-    width: 100%;
+    flex: 1;
     aspect-ratio: 1/1;
     overflow: hidden;
     border-radius: 6px;
-    margin-bottom: 8px;
     background-color: var(--background-secondary);
     display: flex;
     align-items: center;
@@ -601,7 +689,7 @@
     position: relative;
   }
 
-  .cover-container img:not(.mb-cover-overlay) {
+  .cover-container img {
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -614,20 +702,6 @@
     width: 100%;
     height: 100%;
     color: var(--text-muted);
-  }
-
-  .vault-badge {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    background: var(--interactive-accent);
-    color: var(--text-on-accent);
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
   }
 
   .discogs-info {
@@ -721,25 +795,14 @@
   .mb-scan-current {
     font-size: 0.7rem;
     color: var(--text-faint);
-    margin-bottom: 0.5rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  .mb-cover-overlay {
-    position: absolute;
-    bottom: 8px;
-    right: 8px;
-    width: 22%;
-    height: auto;
-    aspect-ratio: 1/1;
-    border-radius: 6px;
-    object-fit: cover;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-  }
-
-  .mb-scanning {
+  .mb-scanning-fill {
+    width: 100%;
+    height: 100%;
     background: var(--background-modifier-border);
     display: flex;
     align-items: center;
@@ -747,34 +810,20 @@
   }
 
   .mb-spinner {
-    width: 40%;
-    height: 40%;
+    width: 24px;
+    height: 24px;
     border: 2px solid transparent;
     border-top-color: var(--text-muted);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
 
-  .mb-match-container {
-    position: absolute;
-    bottom: 8px;
-    right: 8px;
-    width: 22%;
-    aspect-ratio: 1/1;
-  }
-
-  .mb-match-container .mb-cover-overlay {
-    position: static;
-    width: 100%;
-    height: 100%;
-  }
-
   .mb-remove-btn {
     position: absolute;
-    top: -6px;
-    right: -6px;
-    width: 18px;
-    height: 18px;
+    top: 6px;
+    right: 6px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     border: none;
     background: var(--text-error);
@@ -787,30 +836,53 @@
     line-height: 1;
   }
 
-  .mb-match-container:hover .mb-remove-btn,
+  .mb-cover-container:hover .mb-remove-btn,
   .discogs-card:hover .mb-remove-btn {
     display: flex;
   }
 
   .mb-matched-no-art {
+    width: 100%;
+    height: 100%;
     background: var(--interactive-accent);
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--text-on-accent);
-    font-size: 0.6rem;
+    font-size: 0.8rem;
     font-weight: 700;
-    border-radius: 6px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   }
 
-  .mb-no-match {
-    background: #000000;
+  .bulk-import-bar-fill {
+    background: var(--text-success, #28a745);
+  }
+
+  .bulk-import-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .bulk-import-counts {
+    font-size: 0.7rem;
+    color: var(--text-faint);
+    white-space: nowrap;
+  }
+
+  .bulk-import-btn {
+    font-size: 0.75rem;
+  }
+
+  .mb-no-match-fill {
+    width: 100%;
+    height: 100%;
+    background: var(--background-secondary-alt, #000000);
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--text-faint);
-    font-size: 0.75rem;
+    font-size: 1rem;
     font-weight: 600;
   }
 </style>

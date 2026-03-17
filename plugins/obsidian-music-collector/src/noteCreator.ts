@@ -31,6 +31,60 @@ async function downloadCoverArt(
   }
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`Request timed out after ${ms}ms`)), ms),
+    ),
+  ]);
+}
+
+async function tryDownloadUrl(
+  app: App,
+  url: string,
+  title: string,
+  filepath: string,
+): Promise<string | null> {
+  const response = await withTimeout(requestUrl({ url }), 15000);
+  const contentType = response.headers["content-type"] ?? "";
+  const ext = contentType.includes("png") ? "png" : "jpg";
+  const coverName = sanitizeFilename(`${title} Cover Art`);
+  const attachmentPath = await app.fileManager.getAvailablePathForAttachment(
+    `${coverName}.${ext}`,
+    filepath,
+  );
+  const existing = app.vault.getAbstractFileByPath(attachmentPath);
+  if (existing) {
+    return attachmentPath.split("/").pop() ?? `${coverName}.${ext}`;
+  }
+  await app.vault.createBinary(attachmentPath, response.arrayBuffer);
+  return attachmentPath.split("/").pop() ?? `${coverName}.${ext}`;
+}
+
+export async function downloadCoverArtCascade(
+  app: App,
+  mbid: string,
+  title: string,
+  filepath: string,
+): Promise<string | null> {
+  const base = `https://coverartarchive.org/release-group/${mbid}`;
+  const urls = [`${base}/front`, `${base}/front-1200`, `${base}/front-500`];
+  for (const url of urls) {
+    try {
+      return await tryDownloadUrl(app, url, title, filepath);
+    } catch {
+      // Try next size
+    }
+  }
+  return null;
+}
+
+export interface CreateAlbumNoteOptions {
+  openAfterCreate?: boolean;
+  coverArtOverride?: string | null;
+}
+
 function getMusicReplacements(
   result: SearchResult,
   coverArt: string | null,
@@ -90,7 +144,9 @@ export async function createAlbumNote(
   result: SearchResult,
   settings: MusicCollectorSettings,
   extra: Record<string, string> = {},
-): Promise<void> {
+  options: CreateAlbumNoteOptions = {},
+): Promise<TFile | null> {
+  const { openAfterCreate = true, coverArtOverride } = options;
   const { outputFolder, templatePath, filenameFormat } = settings;
   const replacements = getMusicReplacements(result, null, extra);
   const resolvedName = applyMusicVariables(
@@ -102,10 +158,12 @@ export async function createAlbumNote(
 
   const existing = app.vault.getAbstractFileByPath(filepath);
   if (existing) {
-    new Notice(`Note already exists: ${filename}`);
-    const leaf = app.workspace.getLeaf(false);
-    await leaf.openFile(existing as any);
-    return;
+    if (openAfterCreate) {
+      new Notice(`Note already exists: ${filename}`);
+      const leaf = app.workspace.getLeaf(false);
+      await leaf.openFile(existing as any);
+    }
+    return null;
   }
 
   try {
@@ -114,7 +172,10 @@ export async function createAlbumNote(
     // folder already exists
   }
 
-  const coverArt = await downloadCoverArt(app, result, filepath);
+  const coverArt =
+    coverArtOverride !== undefined
+      ? coverArtOverride
+      : await downloadCoverArt(app, result, filepath);
   const fullReplacements = getMusicReplacements(result, coverArt, extra);
 
   let content: string;
@@ -133,7 +194,13 @@ export async function createAlbumNote(
     content = applyMusicVariables(DEFAULT_TEMPLATE, fullReplacements);
   }
 
-  const file = await app.vault.create(filepath, content);
+  let file: TFile;
+  try {
+    file = await app.vault.create(filepath, content);
+  } catch {
+    // File exists on disk but wasn't found by getAbstractFileByPath (cache lag)
+    return null;
+  }
 
   // If Templater is available, run its template engine on the new file
   const templater = getTemplater(app);
@@ -154,9 +221,12 @@ export async function createAlbumNote(
     }
   }
 
-  const leaf = app.workspace.getLeaf(false);
-  await leaf.openFile(file);
+  if (openAfterCreate) {
+    const leaf = app.workspace.getLeaf(false);
+    await leaf.openFile(file);
+  }
   new Notice(`Created: ${filename}`);
+  return file;
 }
 
 const DEFAULT_TEMPLATE = `---
