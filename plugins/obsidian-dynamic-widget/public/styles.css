@@ -154,3 +154,10 @@
   border-radius: 4px;
   display: block;
 }
+
+/* Private mode blur */
+.dynamic-widget-private {
+  filter: blur(5px);
+  user-select: none;
+  pointer-events: none;
+}

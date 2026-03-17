@@ -2,16 +2,16 @@ import {
   type FrontmatterLinkCache,
   type LinkCache,
   MarkdownView,
-  type Plugin,
   type TFile,
 } from "obsidian";
-import { formatDate, normalizeAreasFrontmatter, simplifyWikiLink } from "./utils";
+import type DynamicWidgetPlugin from "./main";
+import { formatDate, isFilePrivate, normalizeAreasFrontmatter, simplifyWikiLink } from "./utils";
 
 export class EditorFooter {
   private footerEl: HTMLElement | null = null;
-  private plugin: Plugin | null = null;
+  private plugin: DynamicWidgetPlugin | null = null;
 
-  attach(plugin: Plugin): void {
+  attach(plugin: DynamicWidgetPlugin): void {
     this.plugin = plugin;
 
     this.footerEl = document.createElement("div");
@@ -45,6 +45,10 @@ export class EditorFooter {
     plugin.app.workspace.onLayoutReady(() => {
       this.update();
     });
+  }
+
+  refresh(): void {
+    this.update();
   }
 
   detach(): void {
@@ -143,13 +147,25 @@ export class EditorFooter {
 
     for (const { name, resourceUrl, path } of covers) {
       const card = row.createEl("div", { cls: "editor-footer-cover-card" });
-      card.style.cursor = "pointer";
-      card.addEventListener("click", () => {
-        const targetFile = app.vault.getAbstractFileByPath(path);
-        if (targetFile) {
-          app.workspace.openLinkText(path, "", "tab");
-        }
-      });
+
+      const targetFile = app.vault.getAbstractFileByPath(path);
+      const isPrivate =
+        this.plugin?.privateMode &&
+        targetFile &&
+        "stat" in targetFile &&
+        isFilePrivate(app, targetFile as TFile);
+
+      if (isPrivate) {
+        card.classList.add("dynamic-widget-private");
+      } else {
+        card.style.cursor = "pointer";
+        card.addEventListener("click", () => {
+          if (targetFile) {
+            app.workspace.openLinkText(path, "", "tab");
+          }
+        });
+      }
+
       card.createEl("img", { attr: { src: resourceUrl, alt: name } });
       card.createEl("span", {
         text: name,
@@ -170,6 +186,10 @@ export class EditorFooter {
     const metaRow = this.footerEl.createEl("div", {
       cls: "editor-footer-meta",
     });
+
+    if (this.plugin?.privateMode && isFilePrivate(this.plugin.app, file)) {
+      metaRow.classList.add("dynamic-widget-private");
+    }
 
     const icon = fm?.icon;
     const title = fm?.title || file.basename;

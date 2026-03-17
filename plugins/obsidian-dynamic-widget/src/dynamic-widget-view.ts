@@ -1,5 +1,6 @@
-import { ItemView, type TFile } from "obsidian";
-import { normalizeAreasFrontmatter, simplifyWikiLink } from "./utils";
+import { ItemView, type TFile, type WorkspaceLeaf } from "obsidian";
+import type DynamicWidgetPlugin from "./main";
+import { isFilePrivate, normalizeAreasFrontmatter, simplifyWikiLink } from "./utils";
 
 export const VIEW_TYPE_DYNAMIC_WIDGET = "dynamic-widget-view";
 const dayFileNameRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -85,6 +86,12 @@ type FilesByFolder = { folder: FolderWithTitle; files: TFile[] }[];
 
 export class DynamicWidgetView extends ItemView {
   contentEl: HTMLElement = document.createElement("div");
+  private plugin: DynamicWidgetPlugin;
+
+  constructor(leaf: WorkspaceLeaf, plugin: DynamicWidgetPlugin) {
+    super(leaf);
+    this.plugin = plugin;
+  }
 
   getViewType(): string {
     return VIEW_TYPE_DYNAMIC_WIDGET;
@@ -96,6 +103,10 @@ export class DynamicWidgetView extends ItemView {
 
   getIcon(): string {
     return "activity";
+  }
+
+  refreshContent(): void {
+    this.updateContent();
   }
 
   private makeUlLinkListWithTitle(
@@ -269,6 +280,12 @@ export class DynamicWidgetView extends ItemView {
       })
       .map((note) => {
         const projectEl = document.createElement("li");
+        const isPrivate =
+          this.plugin.privateMode && isFilePrivate(this.app, note);
+
+        if (isPrivate) {
+          projectEl.classList.add("dynamic-widget-private");
+        }
 
         if (activeFile && activeFile.path === note.path) {
           projectEl.createEl("span", {
@@ -294,10 +311,12 @@ export class DynamicWidgetView extends ItemView {
           text: metadata?.frontmatter?.title || note.basename,
         });
 
-        linkEl.addEventListener("click", (event) => {
-          event.preventDefault();
-          this.app.workspace.getLeaf("tab").openFile(note);
-        });
+        if (!isPrivate) {
+          linkEl.addEventListener("click", (event) => {
+            event.preventDefault();
+            this.app.workspace.getLeaf("tab").openFile(note);
+          });
+        }
         return projectEl;
       });
     for (const liEl of liEls) {
@@ -579,6 +598,17 @@ export class DynamicWidgetView extends ItemView {
     } else if (videoExtensions.includes(fileExtension)) {
       this.renderVideo(coverUrl);
     }
+
+    // Blur media if active file is private
+    if (this.plugin.privateMode) {
+      const activeFile = this.app.workspace.getActiveFile();
+      if (activeFile && isFilePrivate(this.app, activeFile)) {
+        const mediaEl = this.contentEl.querySelector(".area-cover-image:last-child");
+        if (mediaEl) {
+          mediaEl.classList.add("dynamic-widget-private");
+        }
+      }
+    }
   }
 
   private renderAreaContent(activeFile: TFile): void {
@@ -614,9 +644,20 @@ export class DynamicWidgetView extends ItemView {
 
       for (const area of areas) {
         const icon = metadata?.frontmatter?.icon;
-        areasHeaderEl.createEl("h2", {
+        const h2 = areasHeaderEl.createEl("h2", {
           text: `${icon ? `${icon} ` : ""}${area}`,
         });
+
+        // Blur area header if the area file is private
+        if (this.plugin.privateMode) {
+          const areaFile = this.app.vault
+            .getFiles()
+            .find((f) => f.path === `Areas/${area}.md`);
+          if (areaFile && isFilePrivate(this.app, areaFile)) {
+            h2.classList.add("dynamic-widget-private");
+          }
+        }
+
         const areaFiles = this.getFilesByArea(area);
         areasFiles.push(...areaFiles);
       }

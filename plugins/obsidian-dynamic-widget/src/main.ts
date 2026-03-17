@@ -6,26 +6,27 @@ import {
 } from './dynamic-widget-view';
 import { EditorFooter } from './editor-footer';
 
+interface PluginData {
+  privateMode: boolean;
+}
+
+const DEFAULT_DATA: PluginData = { privateMode: false };
+
 export default class DynamicWidgetPlugin extends Plugin {
   private editorFooter = new EditorFooter();
+  privateMode = false;
+  private statusBarEl: HTMLElement | null = null;
 
-  // biome-ignore lint/suspicious/useAwait: Obsidian's API requires this to be async
   async onload() {
+    const data = (await this.loadData()) as PluginData | null;
+    this.privateMode = data?.privateMode ?? DEFAULT_DATA.privateMode;
+
     this.editorFooter.attach(this);
     // Register the dynamic widget view
     this.registerView(
       VIEW_TYPE_DYNAMIC_WIDGET,
-      (leaf) => new DynamicWidgetView(leaf)
+      (leaf) => new DynamicWidgetView(leaf, this)
     );
-
-    // FIX: this is currently causing a new view item every time the plugin is reloaded
-    // Auto-activate the widget in the right sidebar
-    // this.app.workspace.onLayoutReady(async () => {
-    // 	const leaf = this.app.workspace.getLeftLeaf(false);
-    // 	if (leaf) {
-    // 		await this.activateView();
-    // 	}
-    // });
 
     // Add command to toggle the dynamic widget
     this.addCommand({
@@ -35,6 +36,40 @@ export default class DynamicWidgetPlugin extends Plugin {
         this.activateView();
       },
     });
+
+    // Private mode toggle command
+    this.addCommand({
+      id: 'toggle-private-mode',
+      name: 'Toggle Private Mode',
+      callback: () => {
+        this.togglePrivateMode();
+      },
+    });
+
+    // Status bar indicator
+    this.statusBarEl = this.addStatusBarItem();
+    this.updateStatusBar();
+  }
+
+  private async togglePrivateMode(): Promise<void> {
+    this.privateMode = !this.privateMode;
+    await this.saveData({ privateMode: this.privateMode } satisfies PluginData);
+    this.updateStatusBar();
+
+    // Re-render widget view
+    const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_DYNAMIC_WIDGET);
+    for (const leaf of leaves) {
+      const view = leaf.view as DynamicWidgetView;
+      view.refreshContent();
+    }
+
+    // Re-render editor footer
+    this.editorFooter.refresh();
+  }
+
+  private updateStatusBar(): void {
+    if (!this.statusBarEl) return;
+    this.statusBarEl.setText(this.privateMode ? '🔒' : '');
   }
 
   async activateView() {
