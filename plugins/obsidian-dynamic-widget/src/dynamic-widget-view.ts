@@ -1,4 +1,5 @@
 import { ItemView, type TFile } from "obsidian";
+import { normalizeAreasFrontmatter, simplifyWikiLink } from "./utils";
 
 export const VIEW_TYPE_DYNAMIC_WIDGET = "dynamic-widget-view";
 const dayFileNameRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -305,99 +306,6 @@ export class DynamicWidgetView extends ItemView {
     return ulEl;
   }
 
-  private makeLinkMediaGridWithTitle(
-    _title: string,
-    list: TFile[] | undefined,
-  ): Element {
-    if (!list || list.length === 0) {
-      return document.createElement("div");
-    }
-
-    const sectionEl = document.createElement("section");
-    // sectionEl.createEl("h3", { text: title });
-
-    const gridEl = document.createElement("div");
-    gridEl.style.display = "grid";
-    gridEl.style.gridTemplateColumns = "repeat(2, 1fr)";
-    gridEl.style.gap = "16px";
-
-    for (const file of list) {
-      const metadata = this.app.metadataCache.getFileCache(file);
-      const wallpaper = metadata?.frontmatter?.wallpaper;
-
-      if (!wallpaper) continue;
-
-      const itemEl = document.createElement("div");
-      itemEl.style.display = "flex";
-      itemEl.style.flexDirection = "column";
-      itemEl.style.cursor = "pointer";
-      itemEl.style.maxWidth = "100%";
-
-      // Get the wallpaper file
-      const cleanWallpaper = wallpaper.replace(/\[\[|\]\]/g, "");
-      const wallpaperFile = this.app.metadataCache.getFirstLinkpathDest(
-        cleanWallpaper,
-        file.path,
-      );
-
-      if (wallpaperFile) {
-        const wallpaperUrl = this.app.vault.getResourcePath(wallpaperFile);
-        const fileExtension = wallpaperFile.extension.toLowerCase();
-
-        const imageExtensions = [
-          "jpg",
-          "jpeg",
-          "png",
-          "gif",
-          "bmp",
-          "svg",
-          "webp",
-        ];
-        const videoExtensions = ["mp4", "webm", "ogg", "mov", "avi", "mkv"];
-
-        if (imageExtensions.includes(fileExtension)) {
-          const imgEl = itemEl.createEl("img", {
-            attr: { src: wallpaperUrl, alt: file.basename },
-          });
-          imgEl.style.objectFit = "cover";
-          imgEl.style.borderRadius = "8px";
-          imgEl.style.aspectRatio = "16 / 9";
-        } else if (videoExtensions.includes(fileExtension)) {
-          const videoEl = itemEl.createEl("video", {
-            attr: {
-              src: wallpaperUrl,
-              autoplay: "",
-              muted: "",
-              loop: "",
-            },
-          });
-          videoEl.style.width = "100%";
-          videoEl.style.height = "150px";
-          videoEl.style.objectFit = "cover";
-          videoEl.style.borderRadius = "8px";
-        }
-      }
-
-      const icon = metadata?.frontmatter?.icon;
-      const title = file.basename;
-      const titleEl = itemEl.createEl("span", {
-        text: icon ? `${icon} ${title}` : title,
-      });
-      titleEl.style.marginTop = "8px";
-      // titleEl.style.fontSize = "14px";
-
-      itemEl.addEventListener("click", (event) => {
-        event.preventDefault();
-        this.app.workspace.getLeaf("tab").openFile(file);
-      });
-
-      gridEl.appendChild(itemEl);
-    }
-
-    sectionEl.appendChild(gridEl);
-    return sectionEl;
-  }
-
   private filesByFolders(
     allFiles: TFile[],
     folders: FolderWithTitle[],
@@ -451,12 +359,9 @@ export class DynamicWidgetView extends ItemView {
     }
   }
 
-  private readonly simplifyWikiLink = (link: string) =>
-    link.replace(/\[\[|\]\]/g, "");
+  private readonly simplifyWikiLink = simplifyWikiLink;
 
-  private normalizeAreasFrontmatter(areas: string | string[]): string[] {
-    return typeof areas === "string" ? [areas] : areas;
-  }
+  private normalizeAreasFrontmatter = normalizeAreasFrontmatter;
 
   private getFilesByArea(area: string): TFile[] {
     return this.app.vault.getFiles().filter((file) => {
@@ -666,7 +571,7 @@ export class DynamicWidgetView extends ItemView {
     const fileExtension = coverFile.extension.toLowerCase();
 
     // Define image and video extensions
-    const imageExtensions = ["jpg", "jpeg", "png", "gif", "bmp", "svg", "webp"];
+    const imageExtensions = ["jpg", "jpeg", "png", "gif", "bmp", "svg", "webp", "avif"];
     const videoExtensions = ["mp4", "webm", "ogg", "mov", "avi", "mkv"];
 
     if (imageExtensions.includes(fileExtension)) {
@@ -720,11 +625,7 @@ export class DynamicWidgetView extends ItemView {
       );
       const folders = this.filesByFolders(uniqueFiles, IS_AREA_FOLDERS);
       for (const folder of folders) {
-        console.log("Rendering folder section for area content:", folder);
-        const areaSection =
-          folder.folder.folder === "Areas"
-            ? this.makeLinkMediaGridWithTitle(folder.folder.title, folder.files)
-            : this.renderFolderSection(folder.folder, folder.files);
+        const areaSection = this.renderFolderSection(folder.folder, folder.files);
         if (areaSection) {
           this.contentEl.appendChild(areaSection);
         }
@@ -763,42 +664,18 @@ export class DynamicWidgetView extends ItemView {
       areasHeaderEl.style.flexWrap = "wrap";
       areasHeaderEl.style.gap = "10px";
 
-      const areaFiles: TFile[] = [];
-
       for (const area of areas) {
-        const areaFile = this.app.vault.getFiles().find((file) => {
-          const fileMetadata = this.app.metadataCache.getFileCache(file);
-          const aliases: string[] | undefined =
-            fileMetadata?.frontmatter?.aliases;
-          if (aliases) {
-            const simplifiedAliases = this.normalizeAreasFrontmatter(
-              aliases,
-            ).map(this.simplifyWikiLink);
-            if (simplifiedAliases.includes(area)) {
-              return true;
-            }
-          }
-          return file.basename === area;
-        });
-        if (areaFile) areaFiles.push(areaFile);
         const filesByArea = this.getFilesByArea(area).filter((file) => {
           return !file.path.startsWith("Areas");
         });
         areasFiles.push(...filesByArea);
-      }
-      if (areaFiles.length > 0) {
-        const areaGrid = this.makeLinkMediaGridWithTitle("🏠 Areas", areaFiles);
-        this.contentEl.appendChild(areaGrid);
       }
       const uniqueFiles = Array.from(
         new Map(areasFiles.map((file) => [file.path, file])).values(),
       );
       const folders = this.filesByFolders(uniqueFiles, HAS_AREAS_FOLDERS);
       for (const folder of folders) {
-        const areaSection =
-          folder.folder.folder === "Areas"
-            ? this.makeLinkMediaGridWithTitle(folder.folder.title, folder.files)
-            : this.renderFolderSection(folder.folder, folder.files);
+        const areaSection = this.renderFolderSection(folder.folder, folder.files);
         if (areaSection) {
           this.contentEl.appendChild(areaSection);
         }

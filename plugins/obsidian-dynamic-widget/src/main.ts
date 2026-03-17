@@ -4,10 +4,14 @@ import {
   DynamicWidgetView,
   VIEW_TYPE_DYNAMIC_WIDGET,
 } from './dynamic-widget-view';
+import { EditorFooter } from './editor-footer';
 
 export default class DynamicWidgetPlugin extends Plugin {
+  private editorFooter = new EditorFooter();
+
   // biome-ignore lint/suspicious/useAwait: Obsidian's API requires this to be async
   async onload() {
+    this.editorFooter.attach(this);
     // Register the dynamic widget view
     this.registerView(
       VIEW_TYPE_DYNAMIC_WIDGET,
@@ -56,6 +60,7 @@ export default class DynamicWidgetPlugin extends Plugin {
   }
 
   onunload() {
+    this.editorFooter.detach();
     // Clean up the view when plugin is disabled
     this.app.workspace.detachLeavesOfType(VIEW_TYPE_DYNAMIC_WIDGET);
   }

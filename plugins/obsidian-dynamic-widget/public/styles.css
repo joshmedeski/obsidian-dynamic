@@ -81,6 +81,76 @@
   letter-spacing: 0.04em;
 }
 
-.dynamic-widget-content section h4.dynamic-widget-time-group-label:first-of-type {
+.dynamic-widget-content
+  section
+  h4.dynamic-widget-time-group-label:first-of-type {
   margin-top: 0.25em;
+}
+
+/* Editor Footer */
+.editor-footer {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--background-primary);
+  font-size: var(--font-smaller);
+  color: var(--text-muted);
+}
+
+.editor-footer-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 16px;
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+.workspace-leaf-content .view-content:has(.editor-footer) {
+  display: flex;
+  flex-direction: column;
+}
+
+.workspace-leaf-content
+  .view-content:has(.editor-footer)
+  > .markdown-source-view,
+.workspace-leaf-content
+  .view-content:has(.editor-footer)
+  > .markdown-reading-view {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* Editor Footer Covers */
+.editor-footer-covers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 16px;
+}
+
+.editor-footer-cover-card {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.editor-footer-cover-name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-smallest);
+  color: var(--text-muted);
+  min-width: 0;
+}
+
+.editor-footer-cover-card img {
+  height: 150px;
+  width: auto;
+  border-radius: 4px;
+  display: block;
 }
