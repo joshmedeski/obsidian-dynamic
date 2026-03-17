@@ -17,6 +17,14 @@
   $: overlayOpacityLight = $pluginSettings.overlayOpacityLight;
   $: overlayOpacityDark = $pluginSettings.overlayOpacityDark;
 
+  let inheritanceProperty = $pluginSettings.inheritanceProperty;
+  let inheritFromFrontmatterLinks = $pluginSettings.inheritFromFrontmatterLinks;
+  let inheritFromBodyLinks = $pluginSettings.inheritFromBodyLinks;
+
+  $: inheritanceProperty = $pluginSettings.inheritanceProperty;
+  $: inheritFromFrontmatterLinks = $pluginSettings.inheritFromFrontmatterLinks;
+  $: inheritFromBodyLinks = $pluginSettings.inheritFromBodyLinks;
+
   let suggestions: string[] = [];
   let showSuggestions = false;
   let activeSuggestionIndex = -1;
@@ -24,6 +32,10 @@
   let propertySuggestions: string[] = [];
   let showPropertySuggestions = false;
   let activePropertySuggestionIndex = -1;
+
+  let inheritancePropSuggestions: string[] = [];
+  let showInheritancePropSuggestions = false;
+  let activeInheritancePropSuggestionIndex = -1;
 
   function updateWallpapersPath(e: Event) {
     const target = e.target as HTMLInputElement;
@@ -155,6 +167,71 @@
     }, 200);
   }
 
+  function updateInheritanceProperty(e: Event) {
+    const target = e.target as HTMLInputElement;
+    const value = target.value;
+    pluginSettings.update((s) => ({ ...s, inheritanceProperty: value }));
+
+    if (value) {
+      const allKeys = getAllFrontmatterKeys();
+      inheritancePropSuggestions = allKeys
+        .filter((key) => key.toLowerCase().includes(value.toLowerCase()))
+        .slice(0, 10);
+      showInheritancePropSuggestions = inheritancePropSuggestions.length > 0;
+      activeInheritancePropSuggestionIndex = -1;
+    } else {
+      showInheritancePropSuggestions = false;
+    }
+  }
+
+  function selectInheritancePropSuggestion(key: string) {
+    pluginSettings.update((s) => ({ ...s, inheritanceProperty: key }));
+    showInheritancePropSuggestions = false;
+  }
+
+  function handleInheritancePropKeydown(e: KeyboardEvent) {
+    if (!showInheritancePropSuggestions) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      activeInheritancePropSuggestionIndex =
+        (activeInheritancePropSuggestionIndex + 1) % inheritancePropSuggestions.length;
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      activeInheritancePropSuggestionIndex =
+        (activeInheritancePropSuggestionIndex - 1 + inheritancePropSuggestions.length) %
+        inheritancePropSuggestions.length;
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (
+        activeInheritancePropSuggestionIndex >= 0 &&
+        activeInheritancePropSuggestionIndex < inheritancePropSuggestions.length
+      ) {
+        selectInheritancePropSuggestion(
+          inheritancePropSuggestions[activeInheritancePropSuggestionIndex],
+        );
+      }
+    } else if (e.key === "Escape") {
+      showInheritancePropSuggestions = false;
+    }
+  }
+
+  function handleInheritancePropBlur() {
+    setTimeout(() => {
+      showInheritancePropSuggestions = false;
+    }, 200);
+  }
+
+  function updateInheritFromFrontmatterLinks(e: Event) {
+    const target = e.target as HTMLInputElement;
+    pluginSettings.update((s) => ({ ...s, inheritFromFrontmatterLinks: target.checked }));
+  }
+
+  function updateInheritFromBodyLinks(e: Event) {
+    const target = e.target as HTMLInputElement;
+    pluginSettings.update((s) => ({ ...s, inheritFromBodyLinks: target.checked }));
+  }
+
   function updateOverlayOpacityLight(e: Event) {
     const target = e.target as HTMLInputElement;
     pluginSettings.update((s) => ({
@@ -242,6 +319,93 @@
               {/each}
             </div>
           {/if}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="setting-group">
+    <div class="setting-item setting-item-heading">
+      <div class="setting-item-name">Inheritance</div>
+      <div class="setting-item-control"></div>
+    </div>
+    <div class="setting-items">
+      <div class="setting-item">
+        <div class="setting-item-info">
+          <div class="setting-item-name">Inheritance Property</div>
+          <div class="setting-item-description">
+            Check outlinks in this specific frontmatter property for wallpapers.
+          </div>
+        </div>
+        <div class="setting-item-control" style="position: relative;">
+          <input
+            type="text"
+            value={inheritanceProperty}
+            on:input={updateInheritanceProperty}
+            on:keydown={handleInheritancePropKeydown}
+            on:blur={handleInheritancePropBlur}
+            placeholder="e.g., areas"
+          />
+          {#if showInheritancePropSuggestions}
+            <div class="suggestions-dropdown">
+              {#each inheritancePropSuggestions as suggestion, i}
+                <!-- svelte-ignore a11y-click-events-have-key-events -->
+                <!-- svelte-ignore a11y-no-static-element-interactions -->
+                <div
+                  class="suggestion-item {i === activeInheritancePropSuggestionIndex
+                    ? 'active'
+                    : ''}"
+                  on:mousedown={() => selectInheritancePropSuggestion(suggestion)}
+                >
+                  {suggestion}
+                </div>
+              {/each}
+            </div>
+          {/if}
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <div class="setting-item-info">
+          <div class="setting-item-name">Inherit from all frontmatter links</div>
+          <div class="setting-item-description">
+            Check all frontmatter outlinks for wallpapers.
+          </div>
+        </div>
+        <div class="setting-item-control">
+          <!-- svelte-ignore a11y-click-events-have-key-events -->
+          <!-- svelte-ignore a11y-no-static-element-interactions -->
+          <div
+            class="checkbox-container{inheritFromFrontmatterLinks ? ' is-enabled' : ''}"
+            on:click={() => {
+              pluginSettings.update((s) => ({
+                ...s,
+                inheritFromFrontmatterLinks: !s.inheritFromFrontmatterLinks,
+              }));
+            }}
+          ></div>
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <div class="setting-item-info">
+          <div class="setting-item-name">Inherit from body links</div>
+          <div class="setting-item-description">
+            Check inline body links for wallpapers (last link checked first).
+          </div>
+        </div>
+        <div class="setting-item-control">
+          <!-- svelte-ignore a11y-click-events-have-key-events -->
+          <!-- svelte-ignore a11y-no-static-element-interactions -->
+          <div
+            class="checkbox-container{inheritFromBodyLinks ? ' is-enabled' : ''}"
+            on:click={() => {
+              pluginSettings.update((s) => ({
+                ...s,
+                inheritFromBodyLinks: !s.inheritFromBodyLinks,
+              }));
+            }}
+          ></div>
         </div>
       </div>
     </div>

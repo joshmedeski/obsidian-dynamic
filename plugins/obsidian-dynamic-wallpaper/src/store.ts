@@ -7,6 +7,9 @@ export interface PluginSettings {
   ffmpegPath: string;
   overlayOpacityLight: number;
   overlayOpacityDark: number;
+  inheritanceProperty: string;
+  inheritFromFrontmatterLinks: boolean;
+  inheritFromBodyLinks: boolean;
 }
 
 export const DEFAULT_SETTINGS: PluginSettings = {
@@ -15,6 +18,9 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   ffmpegPath: 'ffmpeg',
   overlayOpacityLight: 0.8,
   overlayOpacityDark: 0.6,
+  inheritanceProperty: '',
+  inheritFromFrontmatterLinks: true,
+  inheritFromBodyLinks: true,
 };
 
 export const pluginSettings = writable<PluginSettings>(DEFAULT_SETTINGS);

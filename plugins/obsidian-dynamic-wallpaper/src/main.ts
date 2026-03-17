@@ -85,14 +85,6 @@ class DynamicWallpaperSettingTab extends PluginSettingTab {
   }
 }
 
-function normalizeAreasFrontmatter(areas: string | string[]): string[] {
-  return typeof areas === 'string' ? [areas] : areas;
-}
-
-function simplifyWikiLink(link: string) {
-  return link.replace(/\[\[|\]\]/g, '');
-}
-
 const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'svg'];
 
 function isImageFile(file: TFile): boolean {
@@ -437,6 +429,23 @@ export default class DynamicWallpaperPlugin extends Plugin {
     }
   }
 
+  private findWallpaperFromLinks(
+    links: { link: string }[],
+    sourcePath: string
+  ): string | undefined {
+    for (const entry of links) {
+      const linkedFile = this.app.metadataCache.getFirstLinkpathDest(
+        entry.link, sourcePath
+      );
+      if (linkedFile) {
+        const linkedMeta = this.app.metadataCache.getFileCache(linkedFile);
+        const wp = linkedMeta?.frontmatter?.[this.settings.wallpaperProperty];
+        if (wp) return wp;
+      }
+    }
+    return undefined;
+  }
+
   private updateWallpaper() {
     // Update overlay opacity CSS variables
     document.body.style.setProperty(
@@ -454,50 +463,23 @@ export default class DynamicWallpaperPlugin extends Plugin {
     const metadata = this.app.metadataCache.getFileCache(activeFile);
     let wallpaper = metadata?.frontmatter?.[this.settings.wallpaperProperty];
 
-    // For Days/* notes, scan outlinks in reverse to find the last linked note with a wallpaper
-    if (!wallpaper && activeFile.path.startsWith('Days/')) {
-      const links = metadata?.links;
-      if (links && links.length > 0) {
-        for (let i = links.length - 1; i >= 0; i--) {
-          const linkPath = links[i].link;
-          const linkedFile = this.app.metadataCache.getFirstLinkpathDest(
-            linkPath,
-            activeFile.path
-          );
-          if (linkedFile) {
-            const linkedMetadata =
-              this.app.metadataCache.getFileCache(linkedFile);
-            if (linkedMetadata?.frontmatter?.[this.settings.wallpaperProperty]) {
-              wallpaper = linkedMetadata.frontmatter[this.settings.wallpaperProperty];
-              break;
-            }
-          }
-        }
-      }
+    // Priority 2: Inheritance property (specific frontmatter key)
+    if (!wallpaper && this.settings.inheritanceProperty) {
+      const fmLinks = (metadata?.frontmatterLinks ?? [])
+        .filter(l => l.key === this.settings.inheritanceProperty);
+      wallpaper = this.findWallpaperFromLinks(fmLinks, activeFile.path);
     }
 
-    if (!wallpaper && metadata?.frontmatter?.areas) {
-      const areasFrontmatter = normalizeAreasFrontmatter(
-        metadata.frontmatter.areas
-      );
-      if (areasFrontmatter && areasFrontmatter.length > 0) {
-        for (const area of areasFrontmatter) {
-          const simplifiedArea = simplifyWikiLink(area);
-          // Find the area file itself (not files that belong to the area)
-          const areaFile = this.app.metadataCache.getFirstLinkpathDest(
-            simplifiedArea,
-            activeFile.path
-          );
-          if (areaFile) {
-            const areaFileMetadata =
-              this.app.metadataCache.getFileCache(areaFile);
-            if (areaFileMetadata?.frontmatter?.[this.settings.wallpaperProperty]) {
-              wallpaper = areaFileMetadata.frontmatter[this.settings.wallpaperProperty];
-              break; // Stop searching once we find a wallpaper
-            }
-          }
-        }
-      }
+    // Priority 3: All frontmatter links
+    if (!wallpaper && this.settings.inheritFromFrontmatterLinks) {
+      const fmLinks = metadata?.frontmatterLinks ?? [];
+      wallpaper = this.findWallpaperFromLinks(fmLinks, activeFile.path);
+    }
+
+    // Priority 4: Body links (reverse order — last link wins)
+    if (!wallpaper && this.settings.inheritFromBodyLinks) {
+      const links = (metadata?.links ?? []).slice().reverse();
+      wallpaper = this.findWallpaperFromLinks(links, activeFile.path);
     }
 
     if (wallpaper) {
