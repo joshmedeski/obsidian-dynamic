@@ -4,12 +4,14 @@
 
   export let app: App;
 
+  let wallpaperProperty = $pluginSettings.wallpaperProperty;
   let wallpapersPath = $pluginSettings.wallpapersPath;
   let ffmpegPath = $pluginSettings.ffmpegPath;
   let overlayOpacityLight = $pluginSettings.overlayOpacityLight;
   let overlayOpacityDark = $pluginSettings.overlayOpacityDark;
 
   // Subscribe to store updates to keep local variable in sync
+  $: wallpaperProperty = $pluginSettings.wallpaperProperty;
   $: wallpapersPath = $pluginSettings.wallpapersPath;
   $: ffmpegPath = $pluginSettings.ffmpegPath;
   $: overlayOpacityLight = $pluginSettings.overlayOpacityLight;
@@ -18,6 +20,10 @@
   let suggestions: string[] = [];
   let showSuggestions = false;
   let activeSuggestionIndex = -1;
+
+  let propertySuggestions: string[] = [];
+  let showPropertySuggestions = false;
+  let activePropertySuggestionIndex = -1;
 
   function updateWallpapersPath(e: Event) {
     const target = e.target as HTMLInputElement;
@@ -81,6 +87,74 @@
     }, 200);
   }
 
+  function getAllFrontmatterKeys(): string[] {
+    const keys = new Set<string>();
+    for (const file of app.vault.getMarkdownFiles()) {
+      const cache = app.metadataCache.getFileCache(file);
+      if (cache?.frontmatter) {
+        for (const key of Object.keys(cache.frontmatter)) {
+          if (key !== "position") keys.add(key);
+        }
+      }
+    }
+    return [...keys].sort();
+  }
+
+  function updateWallpaperProperty(e: Event) {
+    const target = e.target as HTMLInputElement;
+    const value = target.value;
+    pluginSettings.update((s) => ({ ...s, wallpaperProperty: value }));
+
+    if (value) {
+      const allKeys = getAllFrontmatterKeys();
+      propertySuggestions = allKeys
+        .filter((key) => key.toLowerCase().includes(value.toLowerCase()))
+        .slice(0, 10);
+      showPropertySuggestions = propertySuggestions.length > 0;
+      activePropertySuggestionIndex = -1;
+    } else {
+      showPropertySuggestions = false;
+    }
+  }
+
+  function selectPropertySuggestion(key: string) {
+    pluginSettings.update((s) => ({ ...s, wallpaperProperty: key }));
+    showPropertySuggestions = false;
+  }
+
+  function handlePropertyKeydown(e: KeyboardEvent) {
+    if (!showPropertySuggestions) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      activePropertySuggestionIndex =
+        (activePropertySuggestionIndex + 1) % propertySuggestions.length;
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      activePropertySuggestionIndex =
+        (activePropertySuggestionIndex - 1 + propertySuggestions.length) %
+        propertySuggestions.length;
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (
+        activePropertySuggestionIndex >= 0 &&
+        activePropertySuggestionIndex < propertySuggestions.length
+      ) {
+        selectPropertySuggestion(
+          propertySuggestions[activePropertySuggestionIndex],
+        );
+      }
+    } else if (e.key === "Escape") {
+      showPropertySuggestions = false;
+    }
+  }
+
+  function handlePropertyBlur() {
+    setTimeout(() => {
+      showPropertySuggestions = false;
+    }, 200);
+  }
+
   function updateOverlayOpacityLight(e: Event) {
     const target = e.target as HTMLInputElement;
     pluginSettings.update((s) => ({
@@ -101,6 +175,41 @@
 <div>
   <div class="setting-group">
     <div class="setting-items">
+      <div class="setting-item">
+        <div class="setting-item-info">
+          <div class="setting-item-name">Wallpaper Property</div>
+          <div class="setting-item-description">
+            The frontmatter property name used to set a note's wallpaper.
+          </div>
+        </div>
+        <div class="setting-item-control" style="position: relative;">
+          <input
+            type="text"
+            value={wallpaperProperty}
+            on:input={updateWallpaperProperty}
+            on:keydown={handlePropertyKeydown}
+            on:blur={handlePropertyBlur}
+            placeholder="e.g., wallpaper"
+          />
+          {#if showPropertySuggestions}
+            <div class="suggestions-dropdown">
+              {#each propertySuggestions as suggestion, i}
+                <!-- svelte-ignore a11y-click-events-have-key-events -->
+                <!-- svelte-ignore a11y-no-static-element-interactions -->
+                <div
+                  class="suggestion-item {i === activePropertySuggestionIndex
+                    ? 'active'
+                    : ''}"
+                  on:mousedown={() => selectPropertySuggestion(suggestion)}
+                >
+                  {suggestion}
+                </div>
+              {/each}
+            </div>
+          {/if}
+        </div>
+      </div>
+
       <div class="setting-item">
         <div class="setting-item-info">
           <div class="setting-item-name">Wallpapers Directory</div>

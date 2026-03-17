@@ -180,7 +180,7 @@ export default class DynamicWallpaperPlugin extends Plugin {
             await this.app.fileManager.processFrontMatter(
               activeFile,
               (frontmatter) => {
-                frontmatter['wallpaper'] = `[[${wallpaper.name}]]`;
+                frontmatter[this.settings.wallpaperProperty] = `[[${wallpaper.name}]]`;
               }
             );
             new Notice(`Wallpaper updated to [[${wallpaper.name}]]`);
@@ -452,7 +452,7 @@ export default class DynamicWallpaperPlugin extends Plugin {
     if (!activeFile) return;
 
     const metadata = this.app.metadataCache.getFileCache(activeFile);
-    let wallpaper = metadata?.frontmatter?.wallpaper;
+    let wallpaper = metadata?.frontmatter?.[this.settings.wallpaperProperty];
 
     // For Days/* notes, scan outlinks in reverse to find the last linked note with a wallpaper
     if (!wallpaper && activeFile.path.startsWith('Days/')) {
@@ -467,8 +467,8 @@ export default class DynamicWallpaperPlugin extends Plugin {
           if (linkedFile) {
             const linkedMetadata =
               this.app.metadataCache.getFileCache(linkedFile);
-            if (linkedMetadata?.frontmatter?.wallpaper) {
-              wallpaper = linkedMetadata.frontmatter.wallpaper;
+            if (linkedMetadata?.frontmatter?.[this.settings.wallpaperProperty]) {
+              wallpaper = linkedMetadata.frontmatter[this.settings.wallpaperProperty];
               break;
             }
           }
@@ -491,8 +491,8 @@ export default class DynamicWallpaperPlugin extends Plugin {
           if (areaFile) {
             const areaFileMetadata =
               this.app.metadataCache.getFileCache(areaFile);
-            if (areaFileMetadata?.frontmatter?.wallpaper) {
-              wallpaper = areaFileMetadata.frontmatter.wallpaper;
+            if (areaFileMetadata?.frontmatter?.[this.settings.wallpaperProperty]) {
+              wallpaper = areaFileMetadata.frontmatter[this.settings.wallpaperProperty];
               break; // Stop searching once we find a wallpaper
             }
           }

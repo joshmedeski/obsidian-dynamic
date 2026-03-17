@@ -2,6 +2,7 @@ import { writable } from 'svelte/store';
 import type DynamicWallpaperPlugin from './main';
 
 export interface PluginSettings {
+  wallpaperProperty: string;
   wallpapersPath: string;
   ffmpegPath: string;
   overlayOpacityLight: number;
@@ -9,6 +10,7 @@ export interface PluginSettings {
 }
 
 export const DEFAULT_SETTINGS: PluginSettings = {
+  wallpaperProperty: 'wallpaper',
   wallpapersPath: '/',
   ffmpegPath: 'ffmpeg',
   overlayOpacityLight: 0.8,
