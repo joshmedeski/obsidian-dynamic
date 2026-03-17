@@ -5,7 +5,7 @@ import {
   type TFile,
 } from "obsidian";
 import type DynamicWidgetPlugin from "./main";
-import { formatDate, isFilePrivate, normalizeAreasFrontmatter, simplifyWikiLink } from "./utils";
+import { formatDate, isFilePrivate, normalizeAreasFrontmatter, redactText, simplifyWikiLink } from "./utils";
 
 export class EditorFooter {
   private footerEl: HTMLElement | null = null;
@@ -146,25 +146,23 @@ export class EditorFooter {
     });
 
     for (const { name, resourceUrl, path } of covers) {
-      const card = row.createEl("div", { cls: "editor-footer-cover-card" });
-
       const targetFile = app.vault.getAbstractFileByPath(path);
       const isPrivate =
         this.plugin?.privateMode &&
         targetFile &&
         "stat" in targetFile &&
-        isFilePrivate(app, targetFile as TFile);
+        (targetFile.path.startsWith("Relationships/") || isFilePrivate(app, targetFile as TFile));
 
-      if (isPrivate) {
-        card.classList.add("dynamic-widget-private");
-      } else {
-        card.style.cursor = "pointer";
-        card.addEventListener("click", () => {
-          if (targetFile) {
-            app.workspace.openLinkText(path, "", "tab");
-          }
-        });
-      }
+      if (isPrivate) continue; // Don't render private cover cards at all
+
+      const card = row.createEl("div", { cls: "editor-footer-cover-card" });
+
+      card.style.cursor = "pointer";
+      card.addEventListener("click", () => {
+        if (targetFile) {
+          app.workspace.openLinkText(path, "", "tab");
+        }
+      });
 
       card.createEl("img", { attr: { src: resourceUrl, alt: name } });
       card.createEl("span", {
@@ -187,12 +185,12 @@ export class EditorFooter {
       cls: "editor-footer-meta",
     });
 
-    if (this.plugin?.privateMode && isFilePrivate(this.plugin.app, file)) {
+    if (this.plugin?.privateMode && (file.path.startsWith("Relationships/") || isFilePrivate(this.plugin.app, file))) {
+      metaRow.createEl("span", { text: redactText("Created: Jan 1, 2025") });
       metaRow.classList.add("dynamic-widget-private");
+      this.footerEl.appendChild(metaRow);
+      return; // Skip cover row and real dates
     }
-
-    const icon = fm?.icon;
-    const title = fm?.title || file.basename;
 
     // Created
     metaRow.createEl("span", {

@@ -1,6 +1,11 @@
 import { ItemView, type TFile, type WorkspaceLeaf } from "obsidian";
 import type DynamicWidgetPlugin from "./main";
-import { isFilePrivate, normalizeAreasFrontmatter, simplifyWikiLink } from "./utils";
+import {
+  isFilePrivate,
+  normalizeAreasFrontmatter,
+  redactText,
+  simplifyWikiLink,
+} from "./utils";
 
 export const VIEW_TYPE_DYNAMIC_WIDGET = "dynamic-widget-view";
 const dayFileNameRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -281,17 +286,20 @@ export class DynamicWidgetView extends ItemView {
       .map((note) => {
         const projectEl = document.createElement("li");
         const isPrivate =
-          this.plugin.privateMode && isFilePrivate(this.app, note);
-
-        if (isPrivate) {
-          projectEl.classList.add("dynamic-widget-private");
-        }
+          this.plugin.privateMode &&
+          (note.path.startsWith("Relationships/") ||
+            isFilePrivate(this.app, note));
 
         if (activeFile && activeFile.path === note.path) {
-          projectEl.createEl("span", {
-            text: `👉 ${note.basename}`,
+          const span = projectEl.createEl("span", {
+            text: isPrivate
+              ? `👉 ${redactText(note.basename)}`
+              : `👉 ${note.basename}`,
             cls: "dynamic-widget-active-file",
           });
+          if (isPrivate) {
+            span.classList.add("dynamic-widget-private");
+          }
           return projectEl;
         }
 
@@ -307,11 +315,14 @@ export class DynamicWidgetView extends ItemView {
           projectEl.style.setProperty("--emoji-bullet", "'⏺️'");
         }
 
+        const title = metadata?.frontmatter?.title || note.basename;
         const linkEl = projectEl.createEl("a", {
-          text: metadata?.frontmatter?.title || note.basename,
+          text: isPrivate ? redactText(title) : title,
         });
 
-        if (!isPrivate) {
+        if (isPrivate) {
+          linkEl.classList.add("dynamic-widget-private");
+        } else {
           linkEl.addEventListener("click", (event) => {
             event.preventDefault();
             this.app.workspace.getLeaf("tab").openFile(note);
@@ -576,6 +587,13 @@ export class DynamicWidgetView extends ItemView {
     activeFilePath: string;
   }): void {
     if (!cover) return;
+
+    // Skip media rendering entirely for private files
+    if (this.plugin.privateMode) {
+      const activeFile = this.app.workspace.getActiveFile();
+      if (activeFile && isFilePrivate(this.app, activeFile)) return;
+    }
+
     // Strip wiki link brackets if present
     const cleanCover = cover.replace(/\[\[|\]\]/g, "");
 
@@ -590,24 +608,22 @@ export class DynamicWidgetView extends ItemView {
     const fileExtension = coverFile.extension.toLowerCase();
 
     // Define image and video extensions
-    const imageExtensions = ["jpg", "jpeg", "png", "gif", "bmp", "svg", "webp", "avif"];
+    const imageExtensions = [
+      "jpg",
+      "jpeg",
+      "png",
+      "gif",
+      "bmp",
+      "svg",
+      "webp",
+      "avif",
+    ];
     const videoExtensions = ["mp4", "webm", "ogg", "mov", "avi", "mkv"];
 
     if (imageExtensions.includes(fileExtension)) {
       this.renderImage(coverUrl);
     } else if (videoExtensions.includes(fileExtension)) {
       this.renderVideo(coverUrl);
-    }
-
-    // Blur media if active file is private
-    if (this.plugin.privateMode) {
-      const activeFile = this.app.workspace.getActiveFile();
-      if (activeFile && isFilePrivate(this.app, activeFile)) {
-        const mediaEl = this.contentEl.querySelector(".area-cover-image:last-child");
-        if (mediaEl) {
-          mediaEl.classList.add("dynamic-widget-private");
-        }
-      }
     }
   }
 
@@ -644,18 +660,21 @@ export class DynamicWidgetView extends ItemView {
 
       for (const area of areas) {
         const icon = metadata?.frontmatter?.icon;
-        const h2 = areasHeaderEl.createEl("h2", {
-          text: `${icon ? `${icon} ` : ""}${area}`,
-        });
+        const isAreaPrivate =
+          this.plugin.privateMode &&
+          (() => {
+            const areaFile = this.app.vault
+              .getFiles()
+              .find((f) => f.path === `Areas/${area}.md`);
+            return areaFile ? isFilePrivate(this.app, areaFile) : false;
+          })();
 
-        // Blur area header if the area file is private
-        if (this.plugin.privateMode) {
-          const areaFile = this.app.vault
-            .getFiles()
-            .find((f) => f.path === `Areas/${area}.md`);
-          if (areaFile && isFilePrivate(this.app, areaFile)) {
-            h2.classList.add("dynamic-widget-private");
-          }
+        const displayText = isAreaPrivate
+          ? redactText(area)
+          : `${icon ? `${icon} ` : ""}${area}`;
+        const h2 = areasHeaderEl.createEl("h2", { text: displayText });
+        if (isAreaPrivate) {
+          h2.classList.add("dynamic-widget-private");
         }
 
         const areaFiles = this.getFilesByArea(area);
@@ -666,7 +685,10 @@ export class DynamicWidgetView extends ItemView {
       );
       const folders = this.filesByFolders(uniqueFiles, IS_AREA_FOLDERS);
       for (const folder of folders) {
-        const areaSection = this.renderFolderSection(folder.folder, folder.files);
+        const areaSection = this.renderFolderSection(
+          folder.folder,
+          folder.files,
+        );
         if (areaSection) {
           this.contentEl.appendChild(areaSection);
         }
@@ -716,7 +738,10 @@ export class DynamicWidgetView extends ItemView {
       );
       const folders = this.filesByFolders(uniqueFiles, HAS_AREAS_FOLDERS);
       for (const folder of folders) {
-        const areaSection = this.renderFolderSection(folder.folder, folder.files);
+        const areaSection = this.renderFolderSection(
+          folder.folder,
+          folder.files,
+        );
         if (areaSection) {
           this.contentEl.appendChild(areaSection);
         }

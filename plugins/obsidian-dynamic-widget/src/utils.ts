@@ -27,6 +27,12 @@ export function simplifyWikiLink(link: string): string {
   return link.replace(/\[\[|\]\]/g, "");
 }
 
+const BLOCK = "\u2588";
+
+export function redactText(original: string): string {
+  return original.replace(/\S/g, BLOCK);
+}
+
 export function formatDate(timestamp: number): string {
   return new Date(timestamp).toLocaleDateString("en-US", {
     month: "short",

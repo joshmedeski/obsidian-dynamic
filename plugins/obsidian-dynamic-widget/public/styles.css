@@ -155,9 +155,34 @@
   display: block;
 }
 
-/* Private mode blur */
+/* Private mode redaction */
 .dynamic-widget-private {
-  filter: blur(5px);
   user-select: none;
   pointer-events: none;
+}
+
+/* Private note view */
+.private-note-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.private-note-icon {
+  font-size: 3em;
+  margin-bottom: 0.5em;
+}
+
+.private-note-title {
+  margin: 0 0 0.5em;
+  color: var(--text-normal);
+}
+
+.private-note-message {
+  max-width: 300px;
+  line-height: 1.5;
 }
