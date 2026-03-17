@@ -454,6 +454,28 @@ export default class DynamicWallpaperPlugin extends Plugin {
     const metadata = this.app.metadataCache.getFileCache(activeFile);
     let wallpaper = metadata?.frontmatter?.wallpaper;
 
+    // For Days/* notes, scan outlinks in reverse to find the last linked note with a wallpaper
+    if (!wallpaper && activeFile.path.startsWith('Days/')) {
+      const links = metadata?.links;
+      if (links && links.length > 0) {
+        for (let i = links.length - 1; i >= 0; i--) {
+          const linkPath = links[i].link;
+          const linkedFile = this.app.metadataCache.getFirstLinkpathDest(
+            linkPath,
+            activeFile.path
+          );
+          if (linkedFile) {
+            const linkedMetadata =
+              this.app.metadataCache.getFileCache(linkedFile);
+            if (linkedMetadata?.frontmatter?.wallpaper) {
+              wallpaper = linkedMetadata.frontmatter.wallpaper;
+              break;
+            }
+          }
+        }
+      }
+    }
+
     if (!wallpaper && metadata?.frontmatter?.areas) {
       const areasFrontmatter = normalizeAreasFrontmatter(
         metadata.frontmatter.areas
