@@ -1,5 +1,5 @@
-import { writable } from 'svelte/store';
-import type DynamicWallpaperPlugin from './main';
+import { writable } from "svelte/store";
+import type DynamicWallpaperPlugin from "./main";
 
 export interface PluginSettings {
   wallpaperProperty: string;
@@ -10,17 +10,19 @@ export interface PluginSettings {
   inheritanceProperty: string;
   inheritFromFrontmatterLinks: boolean;
   inheritFromBodyLinks: boolean;
+  keepExistingWallpaper: boolean;
 }
 
 export const DEFAULT_SETTINGS: PluginSettings = {
-  wallpaperProperty: 'wallpaper',
-  wallpapersPath: '/',
-  ffmpegPath: 'ffmpeg',
+  wallpaperProperty: "wallpaper",
+  wallpapersPath: "/",
+  ffmpegPath: "ffmpeg",
   overlayOpacityLight: 0.8,
   overlayOpacityDark: 0.6,
-  inheritanceProperty: '',
+  inheritanceProperty: "",
   inheritFromFrontmatterLinks: true,
   inheritFromBodyLinks: true,
+  keepExistingWallpaper: true,
 };
 
 export const pluginSettings = writable<PluginSettings>(DEFAULT_SETTINGS);

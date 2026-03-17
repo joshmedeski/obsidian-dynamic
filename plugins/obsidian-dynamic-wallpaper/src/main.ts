@@ -506,6 +506,9 @@ export default class DynamicWallpaperPlugin extends Plugin {
           `url("${cleanWallpaper}")`
         );
       }
+    } else if (!this.settings.keepExistingWallpaper) {
+      this.currentWallpaper = null;
+      document.body.style.removeProperty('--background-image');
     }
   }
 }

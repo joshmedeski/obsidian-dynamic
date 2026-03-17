@@ -20,10 +20,12 @@
   let inheritanceProperty = $pluginSettings.inheritanceProperty;
   let inheritFromFrontmatterLinks = $pluginSettings.inheritFromFrontmatterLinks;
   let inheritFromBodyLinks = $pluginSettings.inheritFromBodyLinks;
+  let keepExistingWallpaper = $pluginSettings.keepExistingWallpaper;
 
   $: inheritanceProperty = $pluginSettings.inheritanceProperty;
   $: inheritFromFrontmatterLinks = $pluginSettings.inheritFromFrontmatterLinks;
   $: inheritFromBodyLinks = $pluginSettings.inheritFromBodyLinks;
+  $: keepExistingWallpaper = $pluginSettings.keepExistingWallpaper;
 
   let suggestions: string[] = [];
   let showSuggestions = false;
@@ -319,6 +321,30 @@
               {/each}
             </div>
           {/if}
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <div class="setting-item-info">
+          <div class="setting-item-name">Keep existing wallpaper</div>
+          <div class="setting-item-description">
+            When enabled, the last wallpaper remains visible if the current note
+            has no wallpaper set. When disabled, notes without a wallpaper show
+            a blank background.
+          </div>
+        </div>
+        <div class="setting-item-control">
+          <!-- svelte-ignore a11y-click-events-have-key-events -->
+          <!-- svelte-ignore a11y-no-static-element-interactions -->
+          <div
+            class="checkbox-container{keepExistingWallpaper ? ' is-enabled' : ''}"
+            on:click={() => {
+              pluginSettings.update((s) => ({
+                ...s,
+                keepExistingWallpaper: !s.keepExistingWallpaper,
+              }));
+            }}
+          ></div>
         </div>
       </div>
     </div>
