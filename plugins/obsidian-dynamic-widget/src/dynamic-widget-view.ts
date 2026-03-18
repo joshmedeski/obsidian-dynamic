@@ -381,10 +381,6 @@ export class DynamicWidgetView extends ItemView {
         );
       }
       case "relative-date":
-        console.log(
-          "Rendering with relative date groups for folder:",
-          folder.title,
-        );
         return this.makeUlLinkListWithRelativeDateGroups(folder.title, files);
     }
   }
