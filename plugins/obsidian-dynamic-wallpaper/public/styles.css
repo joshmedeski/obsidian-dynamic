@@ -1,4 +1,7 @@
 body {
+  --background-overlay-opacity-light: 0.8;
+  --background-overlay-opacity-dark: 0.8;
+
   --callout-padding: 1.5rem 2rem;
   --modal-background: var(--overlay-background);
 
@@ -24,12 +27,11 @@ body {
 }
 
 .theme-light {
-  --background-overlay-opacity: 0.8;
   --transparent-background: rgba(
     255,
     255,
     255,
-    var(--background-overlay-opacity)
+    var(--background-overlay-opacity-light)
   );
   --overlay-background: rgba(255, 255, 255, 0.9);
   --divider-color: rgba(0, 0, 0, 0);
@@ -38,8 +40,12 @@ body {
 }
 
 .theme-dark {
-  --background-overlay-opacity: 0.6;
-  --transparent-background: rgba(0, 0, 0, var(--background-overlay-opacity));
+  --transparent-background: rgba(
+    0,
+    0,
+    0,
+    var(--background-overlay-opacity-dark)
+  );
   --overlay-background: rgba(0, 0, 0, 0.9);
   --divider-color: rgba(255, 255, 255, 0);
   --code-background: rgba(0, 0, 0, 0.3);
