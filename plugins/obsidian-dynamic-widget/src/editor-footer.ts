@@ -186,7 +186,7 @@ export class EditorFooter {
     });
 
     if (this.plugin?.privateMode && (file.path.startsWith("Relationships/") || isFilePrivate(this.plugin.app, file))) {
-      metaRow.createEl("span", { text: redactText("Created: Jan 1, 2025") });
+      metaRow.createEl("span", { text: redactText("Created: Wed, Jan 1, 2025, 12:00am") });
       metaRow.classList.add("dynamic-widget-private");
       this.footerEl.appendChild(metaRow);
       return; // Skip cover row and real dates

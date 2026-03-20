@@ -34,9 +34,14 @@ export function redactText(original: string): string {
 }
 
 export function formatDate(timestamp: number): string {
-  return new Date(timestamp).toLocaleDateString("en-US", {
+  const formatted = new Date(timestamp).toLocaleString("en-US", {
+    weekday: "short",
     month: "short",
     day: "numeric",
     year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
   });
+  return formatted.replace(/\s?(AM|PM)$/i, (_, p) => p.toLowerCase());
 }
