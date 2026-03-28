@@ -141,9 +141,19 @@ export class EditorFooter {
 
     if (covers.length === 0) return;
 
-    const row = this.footerEl.createEl("div", {
+    const wrapper = this.footerEl.createEl("div", {
+      cls: "editor-footer-covers-wrapper",
+    });
+
+    const handle = wrapper.createEl("div", {
+      cls: "editor-footer-resize-handle",
+    });
+
+    const row = wrapper.createEl("div", {
       cls: "editor-footer-covers",
     });
+
+    this.attachResizeHandle(handle, row);
 
     for (const { name, resourceUrl, path } of covers) {
       const targetFile = app.vault.getAbstractFileByPath(path);
@@ -170,6 +180,32 @@ export class EditorFooter {
         cls: "editor-footer-cover-name",
       });
     }
+  }
+
+  private attachResizeHandle(handle: HTMLElement, covers: HTMLElement): void {
+    let startY = 0;
+    let startHeight = 0;
+
+    const onMouseMove = (e: MouseEvent) => {
+      const delta = startY - e.clientY;
+      const newHeight = Math.min(500, Math.max(80, startHeight + delta));
+      covers.style.height = `${newHeight}px`;
+    };
+
+    const onMouseUp = () => {
+      handle.classList.remove("is-dragging");
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+
+    handle.addEventListener("mousedown", (e: MouseEvent) => {
+      e.preventDefault();
+      startY = e.clientY;
+      startHeight = covers.offsetHeight;
+      handle.classList.add("is-dragging");
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+    });
   }
 
   private buildFooterContent(file: TFile, activeView: MarkdownView): void {
