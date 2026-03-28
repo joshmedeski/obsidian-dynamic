@@ -73,6 +73,27 @@ importers:
         specifier: 'catalog:'
         version: 3.1.1(vite@7.1.2(@types/node@20.19.4)(yaml@2.8.1))
 
+  plugins/obsidian-dispatch:
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.19.4
+      obsidian:
+        specifier: 'catalog:'
+        version: 1.12.3(@codemirror/state@6.5.2)(@codemirror/view@6.38.1)
+      obsidian-vite-config:
+        specifier: workspace:*
+        version: link:../../packages/obsidian-vitest-config
+      tslib:
+        specifier: 'catalog:'
+        version: 2.8.1
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.2
+      vite:
+        specifier: 'catalog:'
+        version: 7.1.2(@types/node@20.19.4)(yaml@2.8.1)
+
   plugins/obsidian-dynamic-wallpaper:
     devDependencies:
       '@types/node':
