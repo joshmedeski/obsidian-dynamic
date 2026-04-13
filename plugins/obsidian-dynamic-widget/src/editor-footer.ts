@@ -111,20 +111,31 @@ export class EditorFooter {
       if (!targetFile) return;
 
       const targetMeta = app.metadataCache.getFileCache(targetFile);
+
+      // Add this outlink's own cover, if it has one
       const cover = targetMeta?.frontmatter?.cover;
-      if (!cover) return;
+      if (cover) {
+        const coverFile = app.metadataCache.getFirstLinkpathDest(
+          simplifyWikiLink(String(cover)),
+          targetFile.path,
+        );
+        if (coverFile) {
+          covers.push({
+            name: targetFile.basename,
+            resourceUrl: app.vault.getResourcePath(coverFile),
+            path: targetFile.path,
+          });
+        }
+      }
 
-      const coverFile = app.metadataCache.getFirstLinkpathDest(
-        simplifyWikiLink(String(cover)),
-        targetFile.path,
-      );
-      if (!coverFile) return;
-
-      covers.push({
-        name: targetFile.basename,
-        resourceUrl: app.vault.getResourcePath(coverFile),
-        path: targetFile.path,
-      });
+      // Also surface covers for notes listed in this outlink's "with" frontmatter
+      const withRaw = targetMeta?.frontmatter?.with;
+      if (withRaw) {
+        const withLinks = normalizeAreasFrontmatter(withRaw);
+        for (const w of withLinks) {
+          resolveCover(simplifyWikiLink(String(w)));
+        }
+      }
     };
 
     // Frontmatter property links first
