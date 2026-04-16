@@ -207,3 +207,71 @@
   max-width: 300px;
   line-height: 1.5;
 }
+
+/* Areas View */
+.areas-view-container {
+  padding: var(--file-margins);
+}
+
+.workspace-leaf-content:has(.areas-view-container) .view-content {
+  padding: var(--file-margins);
+}
+
+.areas-view-title {
+  font-size: calc(var(--inline-title-size) * 1.5);
+  font-weight: var(--inline-title-weight);
+  line-height: var(--inline-title-line-height);
+  margin-bottom: var(--inline-title-margin-bottom);
+}
+
+.areas-view-description {
+  margin-top: 0;
+  margin-bottom: 1em;
+  color: var(--text-muted);
+}
+
+.areas-view-heading {
+  margin-bottom: 0.25em;
+}
+
+.areas-view-heading:hover {
+  color: var(--text-accent);
+}
+
+.areas-view-children {
+  margin-top: 0;
+  padding-left: 1.5em;
+  font-size: var(--font-text-size);
+}
+
+.areas-view-child-link {
+  font-weight: var(--bold-weight);
+  text-decoration: none;
+  color: var(--text-normal);
+  cursor: pointer;
+}
+
+.areas-view-child-link:hover {
+  color: var(--text-accent);
+}
+
+.areas-view-arrow {
+  color: var(--text-muted);
+}
+
+.areas-view-grandchild {
+  font-weight: normal;
+  color: var(--text-normal);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.areas-view-grandchild:hover {
+  color: var(--text-accent);
+}
+
+.areas-view-empty {
+  color: var(--text-muted);
+  text-align: center;
+  padding: 2em 1em;
+}

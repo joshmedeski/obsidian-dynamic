@@ -1,5 +1,6 @@
 import { MarkdownView, Plugin, type TFile } from 'obsidian';
 
+import { AreasView, VIEW_TYPE_AREAS } from './areas-view';
 import {
   DynamicWidgetView,
   VIEW_TYPE_DYNAMIC_WIDGET,
@@ -39,6 +40,12 @@ export default class DynamicWidgetPlugin extends Plugin {
       (leaf) => new PrivateNoteView(leaf)
     );
 
+    // Register the areas view
+    this.registerView(
+      VIEW_TYPE_AREAS,
+      (leaf) => new AreasView(leaf, this)
+    );
+
     // Intercept private file opens
     this.registerEvent(
       this.app.workspace.on('file-open', (file) => {
@@ -59,6 +66,15 @@ export default class DynamicWidgetPlugin extends Plugin {
       name: 'Open Dynamic Widget',
       callback: () => {
         this.activateView();
+      },
+    });
+
+    // Add command to open areas view
+    this.addCommand({
+      id: 'open-areas-view',
+      name: 'Open Areas',
+      callback: () => {
+        this.activateAreasView();
       },
     });
 
@@ -118,6 +134,12 @@ export default class DynamicWidgetPlugin extends Plugin {
 
     // Re-render editor footer
     this.editorFooter.refresh();
+
+    // Re-render areas view
+    const areasLeaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_AREAS);
+    for (const leaf of areasLeaves) {
+      (leaf.view as AreasView).refreshContent();
+    }
   }
 
   private updateStatusBar(): void {
@@ -147,10 +169,20 @@ export default class DynamicWidgetPlugin extends Plugin {
     }
   }
 
+  async activateAreasView() {
+    const leaf = this.app.workspace.getLeaf('tab');
+    await leaf.setViewState({
+      type: VIEW_TYPE_AREAS,
+      active: true,
+    });
+    this.app.workspace.revealLeaf(leaf);
+  }
+
   onunload() {
     this.editorFooter.detach();
     // Clean up views when plugin is disabled
     this.app.workspace.detachLeavesOfType(VIEW_TYPE_DYNAMIC_WIDGET);
     this.app.workspace.detachLeavesOfType(VIEW_TYPE_PRIVATE_NOTE);
+    this.app.workspace.detachLeavesOfType(VIEW_TYPE_AREAS);
   }
 }
