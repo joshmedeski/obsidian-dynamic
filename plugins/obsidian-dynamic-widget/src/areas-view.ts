@@ -1,11 +1,7 @@
 import { ItemView, type TFile, type WorkspaceLeaf } from "obsidian";
+import { getChildAreas, getTopLevelAreas } from "./areas-hierarchy";
 import type DynamicWidgetPlugin from "./main";
-import {
-  isFilePrivate,
-  normalizeAreasFrontmatter,
-  redactText,
-  simplifyWikiLink,
-} from "./utils";
+import { isFilePrivate, redactText } from "./utils";
 
 export const VIEW_TYPE_AREAS = "areas-view";
 
@@ -84,53 +80,6 @@ export class AreasView extends ItemView {
     this.contentEl = document.createElement("div");
   }
 
-  private getTopLevelAreas(): TFile[] {
-    const areaFiles = this.app.vault.getFiles().filter(
-      (f) =>
-        f.path.startsWith("Areas/") &&
-        f.extension === "md" &&
-        f.path.split("/").length === 2, // direct children only
-    );
-
-    const topLevel = areaFiles.filter((f) => {
-      const metadata = this.app.metadataCache.getFileCache(f);
-      const areas = metadata?.frontmatter?.areas;
-      return !areas || (Array.isArray(areas) && areas.length === 0);
-    });
-
-    topLevel.sort((a, b) => {
-      const aMeta = this.app.metadataCache.getFileCache(a);
-      const bMeta = this.app.metadataCache.getFileCache(b);
-      const aPriority = aMeta?.frontmatter?.priority;
-      const bPriority = bMeta?.frontmatter?.priority;
-
-      if (aPriority == null && bPriority == null)
-        return a.basename.localeCompare(b.basename);
-      if (aPriority == null) return 1;
-      if (bPriority == null) return -1;
-      return aPriority - bPriority;
-    });
-
-    return topLevel;
-  }
-
-  private getChildAreas(parentName: string): TFile[] {
-    return this.app.vault.getFiles().filter((f: TFile) => {
-      if (
-        !f.path.startsWith("Areas/") ||
-        f.extension !== "md" ||
-        f.path.split("/").length !== 2
-      )
-        return false;
-      const metadata = this.app.metadataCache.getFileCache(f);
-      const areas = metadata?.frontmatter?.areas;
-      if (!areas) return false;
-      return normalizeAreasFrontmatter(areas)
-        .map(simplifyWikiLink)
-        .includes(parentName);
-    }).sort((a, b) => a.basename.localeCompare(b.basename));
-  }
-
   private renderContent(): void {
     this.contentEl.empty();
 
@@ -139,7 +88,7 @@ export class AreasView extends ItemView {
       cls: "areas-view-title",
     });
 
-    const areas = this.getTopLevelAreas();
+    const areas = getTopLevelAreas(this.app);
     if (areas.length === 0) {
       this.contentEl.createEl("p", {
         text: "No top-level areas found.",
@@ -189,7 +138,7 @@ export class AreasView extends ItemView {
       }
 
       // Child areas as bullet list
-      const children = this.getChildAreas(file.basename);
+      const children = getChildAreas(this.app, file.basename);
       if (children.length > 0) {
         const ul = this.contentEl.createEl("ul", {
           cls: "areas-view-children",
@@ -218,7 +167,7 @@ export class AreasView extends ItemView {
           }
 
           // Grandchildren inline with →
-          const grandchildren = this.getChildAreas(child.basename);
+          const grandchildren = getChildAreas(this.app, child.basename);
           if (grandchildren.length > 0) {
             li.createEl("span", {
               text: " \u2192 ",

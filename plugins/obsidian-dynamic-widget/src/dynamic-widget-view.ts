@@ -1,4 +1,5 @@
 import { ItemView, type TFile, type WorkspaceLeaf } from "obsidian";
+import { collectAreaNames, getAreaHierarchy } from "./areas-hierarchy";
 import type DynamicWidgetPlugin from "./main";
 import {
   isFilePrivate,
@@ -66,12 +67,6 @@ const IS_DAILY_FOLDERS: FolderWithTitle[] = [
     title: "📥 Inbox",
     timeGroup: { compareRule: "relative-date" },
   },
-  {
-    folder: "Projects/Active",
-    title: "✅ Active Projects",
-    timeGroup: { compareRule: "relative-date" },
-  },
-  { folder: "Projects/Waiting For", title: "⏳ Waiting For" },
 ];
 
 const NO_ACTIVE_FILE: FolderWithTitle[] = [
@@ -768,11 +763,79 @@ export class DynamicWidgetView extends ItemView {
     });
 
     const allFiles = this.app.vault.getFiles();
+
+    // Inbox section
     const folders = this.filesByFolders(allFiles, IS_DAILY_FOLDERS);
     for (const folder of folders) {
       const section = this.renderFolderSection(folder.folder, folder.files);
       this.contentEl.appendChild(section);
     }
+
+    // Active Projects grouped by area priority
+    this.renderFolderByArea(allFiles, "Projects/Active/", "✅ Active Projects");
+
+    // Waiting For grouped by area priority
+    this.renderFolderByArea(
+      allFiles,
+      "Projects/Waiting For/",
+      "⏳ Waiting For",
+    );
+  }
+
+  private renderFolderByArea(
+    allFiles: TFile[],
+    folderPrefix: string,
+    title: string,
+  ): void {
+    const projects = allFiles.filter(
+      (f) => f.path.startsWith(folderPrefix) && f.extension === "md",
+    );
+    if (projects.length === 0) return;
+
+    const sectionEl = document.createElement("section");
+    sectionEl.createEl("h3", { text: title });
+
+    const hierarchy = getAreaHierarchy(this.app);
+    const claimed = new Set<string>();
+
+    for (const node of hierarchy) {
+      const areaNames = collectAreaNames(node);
+      const matching = projects.filter((f) => {
+        if (claimed.has(f.path)) return false;
+        const meta = this.app.metadataCache.getFileCache(f);
+        const fileAreas = meta?.frontmatter?.areas;
+        if (!fileAreas) return false;
+        return this.normalizeAreasFrontmatter(fileAreas)
+          .map(this.simplifyWikiLink)
+          .some((a) => areaNames.includes(a));
+      });
+
+      if (matching.length === 0) continue;
+
+      for (const f of matching) claimed.add(f.path);
+
+      const label =
+        node.priority != null
+          ? `${node.priority}. ${node.file.basename}`
+          : node.file.basename;
+      sectionEl.createEl("h4", {
+        text: label,
+        cls: "dynamic-widget-time-group-label",
+      });
+      sectionEl.appendChild(this.makeUlLinkList(matching));
+    }
+
+    // Uncategorized projects (no area match)
+    const uncategorized = projects.filter((f) => !claimed.has(f.path));
+    if (uncategorized.length > 0) {
+      sectionEl.createEl("h4", {
+        text: "Uncategorized",
+        cls: "dynamic-widget-time-group-label",
+      });
+      sectionEl.appendChild(this.makeUlLinkList(uncategorized));
+    }
+
+    this.contentEl.appendChild(sectionEl);
   }
 
   private updateContent() {
