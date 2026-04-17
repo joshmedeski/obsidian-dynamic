@@ -75,11 +75,6 @@ const NO_ACTIVE_FILE: FolderWithTitle[] = [
     title: "📥 Inbox",
     timeGroup: { compareRule: "relative-date" },
   },
-  {
-    folder: "Projects/Active",
-    title: "✅ Active Projects",
-    timeGroup: { compareRule: "relative-date" },
-  },
 ];
 
 type FilesByFolder = { folder: FolderWithTitle; files: TFile[] }[];
@@ -846,8 +841,9 @@ export class DynamicWidgetView extends ItemView {
 
     const activeFile = this.app.workspace.getActiveFile();
     if (!activeFile) {
-      // Show inbox and active projects when no file is active
       const allFiles = this.app.vault.getFiles();
+
+      // Inbox section
       const folders = this.filesByFolders(allFiles, NO_ACTIVE_FILE);
       for (const folder of folders) {
         const section = this.renderFolderSection(folder.folder, folder.files);
@@ -855,6 +851,13 @@ export class DynamicWidgetView extends ItemView {
           this.contentEl.appendChild(section);
         }
       }
+
+      // Active Projects grouped by area priority
+      this.renderFolderByArea(
+        allFiles,
+        "Projects/Active/",
+        "✅ Active Projects",
+      );
       return;
     }
 
