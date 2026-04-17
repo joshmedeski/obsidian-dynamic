@@ -1,15 +1,9 @@
 import { ItemView, type TFile, type WorkspaceLeaf } from "obsidian";
 import { getChildAreas, getTopLevelAreas } from "./areas-hierarchy";
 import type DynamicWidgetPlugin from "./main";
-import { isFilePrivate, redactText } from "./utils";
+import { isFilePrivate, isValidHex, redactText } from "./utils";
 
 export const VIEW_TYPE_AREAS = "areas-view";
-
-const HEX_COLOR = /^#([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
-
-function isValidHex(v: unknown): v is string {
-  return typeof v === "string" && HEX_COLOR.test(v.trim());
-}
 
 export class AreasView extends ItemView {
   contentEl: HTMLElement = document.createElement("div");

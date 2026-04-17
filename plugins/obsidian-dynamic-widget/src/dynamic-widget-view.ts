@@ -3,6 +3,7 @@ import { collectAreaNames, getAreaHierarchy } from "./areas-hierarchy";
 import type DynamicWidgetPlugin from "./main";
 import {
   isFilePrivate,
+  isValidHex,
   normalizeAreasFrontmatter,
   redactText,
   simplifyWikiLink,
@@ -813,21 +814,40 @@ export class DynamicWidgetView extends ItemView {
         node.priority != null
           ? `${node.priority}. ${node.file.basename}`
           : node.file.basename;
-      sectionEl.createEl("h4", {
+
+      const groupEl = sectionEl.createEl("div", {
+        cls: "dynamic-widget-area-group",
+      });
+
+      const areaMeta = this.app.metadataCache.getFileCache(node.file);
+      const isAreaPrivate =
+        this.plugin.privateMode && isFilePrivate(this.app, node.file);
+      const rawColor = areaMeta?.frontmatter?.color;
+      const color =
+        !isAreaPrivate && isValidHex(rawColor) ? rawColor.trim() : null;
+      if (color) {
+        groupEl.classList.add("has-color");
+        groupEl.style.setProperty("--area-color", color);
+      }
+
+      groupEl.createEl("h4", {
         text: label,
         cls: "dynamic-widget-time-group-label",
       });
-      sectionEl.appendChild(this.makeUlLinkList(matching));
+      groupEl.appendChild(this.makeUlLinkList(matching));
     }
 
     // Uncategorized projects (no area match)
     const uncategorized = projects.filter((f) => !claimed.has(f.path));
     if (uncategorized.length > 0) {
-      sectionEl.createEl("h4", {
+      const groupEl = sectionEl.createEl("div", {
+        cls: "dynamic-widget-area-group",
+      });
+      groupEl.createEl("h4", {
         text: "Uncategorized",
         cls: "dynamic-widget-time-group-label",
       });
-      sectionEl.appendChild(this.makeUlLinkList(uncategorized));
+      groupEl.appendChild(this.makeUlLinkList(uncategorized));
     }
 
     this.contentEl.appendChild(sectionEl);

@@ -33,6 +33,12 @@ export function redactText(original: string): string {
   return original.replace(/\S/g, BLOCK);
 }
 
+const HEX_COLOR = /^#([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
+
+export function isValidHex(v: unknown): v is string {
+  return typeof v === "string" && HEX_COLOR.test(v.trim());
+}
+
 export function formatDate(timestamp: number): string {
   const formatted = new Date(timestamp).toLocaleString("en-US", {
     weekday: "short",
