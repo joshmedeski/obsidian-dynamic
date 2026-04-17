@@ -5,6 +5,12 @@ import { isFilePrivate, redactText } from "./utils";
 
 export const VIEW_TYPE_AREAS = "areas-view";
 
+const HEX_COLOR = /^#([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
+
+function isValidHex(v: unknown): v is string {
+  return typeof v === "string" && HEX_COLOR.test(v.trim());
+}
+
 export class AreasView extends ItemView {
   contentEl: HTMLElement = document.createElement("div");
   private plugin: DynamicWidgetPlugin;
@@ -107,8 +113,20 @@ export class AreasView extends ItemView {
       const displayName =
         priority != null ? `${priority}. ${name}` : `${name} (No priority)`;
 
+      const rawColor = metadata?.frontmatter?.color;
+      const color =
+        !isPrivate && isValidHex(rawColor) ? rawColor.trim() : null;
+
+      const section = this.contentEl.createEl("section", {
+        cls: "areas-view-section",
+      });
+      if (color) {
+        section.classList.add("has-color");
+        section.style.setProperty("--area-color", color);
+      }
+
       // Top-level area as h1
-      const h1 = this.contentEl.createEl("h1", {
+      const h1 = section.createEl("h1", {
         text: displayName,
         cls: "areas-view-heading",
       });
@@ -128,7 +146,7 @@ export class AreasView extends ItemView {
         const descText = isPrivate
           ? redactText(String(description))
           : String(description);
-        const p = this.contentEl.createEl("p", {
+        const p = section.createEl("p", {
           text: descText,
           cls: "areas-view-description",
         });
@@ -140,7 +158,7 @@ export class AreasView extends ItemView {
       // Child areas as bullet list
       const children = getChildAreas(this.app, file.basename);
       if (children.length > 0) {
-        const ul = this.contentEl.createEl("ul", {
+        const ul = section.createEl("ul", {
           cls: "areas-view-children",
         });
 
