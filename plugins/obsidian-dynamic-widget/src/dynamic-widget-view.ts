@@ -1,5 +1,6 @@
 import { ItemView, type TFile, type WorkspaceLeaf } from "obsidian";
 import { collectAreaNames, getAreaHierarchy } from "./areas-hierarchy";
+import { type CalendarEvent, fetchEventsForDate } from "./calendar";
 import type DynamicWidgetPlugin from "./main";
 import {
   formatRelativeDeadline,
@@ -12,6 +13,99 @@ import {
 
 export const VIEW_TYPE_DYNAMIC_WIDGET = "dynamic-widget-view";
 const dayFileNameRegex = /^\d{4}-\d{2}-\d{2}$/;
+
+function formatEventTime(date: Date): string {
+  return date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function sanitizeFilenameSegment(raw: string): string {
+  return raw
+    .replace(/[\\/:*?"<>|]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function formatEventDateLabel(date: Date): string {
+  return date
+    .toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    })
+    .replace(/,/g, "");
+}
+
+function buildEventNoteFilename(event: CalendarEvent): string {
+  const title = sanitizeFilenameSegment(event.title) || "Event";
+  const dateLabel = formatEventDateLabel(event.startDate);
+  return `${title} (${dateLabel})`;
+}
+
+function toLocalIsoDateTime(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return (
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+    `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+  );
+}
+
+function toLocalIsoDate(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function formatDurationMmSs(ms: number): string {
+  const totalSeconds = Math.max(0, Math.round(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function buildEventNoteContent(event: CalendarEvent): string {
+  const isMeeting = Boolean(event.attendees && event.attendees.length > 0);
+  const lines: string[] = ["---"];
+  lines.push(`type: ${isMeeting ? "meeting" : "event"}`);
+  lines.push(`calendar_id: ${event.id}`);
+  lines.push(
+    `when: ${event.allDay ? toLocalIsoDate(event.startDate) : toLocalIsoDateTime(event.startDate)}`,
+  );
+
+  if (isMeeting && !event.allDay) {
+    const duration = event.endDate.getTime() - event.startDate.getTime();
+    lines.push(`length: ${formatDurationMmSs(duration)}`);
+  }
+
+  lines.push("aliases:");
+  lines.push(`  - "${event.title.replace(/"/g, '\\"')}"`);
+
+  lines.push("areas: []");
+
+  if (isMeeting && event.attendees) {
+    lines.push("with:");
+    for (const attendee of event.attendees) {
+      const label = attendee.name || attendee.email;
+      if (!label) continue;
+      lines.push(`  - "[[${label.replace(/"/g, '\\"')}]]"`);
+    }
+  }
+
+  if (event.location) {
+    lines.push(`location: ${JSON.stringify(event.location)}`);
+  }
+
+  lines.push("---");
+  lines.push("");
+
+  if (event.notes) {
+    lines.push(event.notes.trim());
+    lines.push("");
+  }
+
+  return lines.join("\n");
+}
 
 type TimeGroup =
   | { compareRule: "start-of-day"; staleLabel: string; updatedLabel: string }
@@ -772,6 +866,8 @@ export class DynamicWidgetView extends ItemView {
       })}`,
     });
 
+    this.renderCalendarEventsSection(noteDate);
+
     const allFiles = this.app.vault.getFiles();
 
     // Inbox section
@@ -790,6 +886,109 @@ export class DynamicWidgetView extends ItemView {
       "Projects/Waiting For/",
       "⏳ Waiting For",
     );
+  }
+
+  private renderCalendarEventsSection(date: Date): void {
+    const sectionEl = this.contentEl.createEl("section");
+    sectionEl.createEl("h3", { text: "📅 Today's Events" });
+    const bodyEl = sectionEl.createEl("div", {
+      cls: "calendar-events-body",
+    });
+    bodyEl.createEl("p", {
+      text: "Loading events…",
+      cls: "calendar-events-empty",
+    });
+
+    fetchEventsForDate(date).then((events) => {
+      if (!sectionEl.isConnected) return;
+      if (events === null) {
+        sectionEl.remove();
+        return;
+      }
+      this.populateCalendarEvents(bodyEl, events);
+    });
+  }
+
+  private populateCalendarEvents(
+    bodyEl: HTMLElement,
+    events: CalendarEvent[],
+  ): void {
+    bodyEl.empty();
+
+    if (events.length === 0) {
+      bodyEl.createEl("p", {
+        text: "No events today.",
+        cls: "calendar-events-empty",
+      });
+      return;
+    }
+
+    const ulEl = bodyEl.createEl("ul", { cls: "calendar-events-list" });
+    for (const ev of events) {
+      const liEl = ulEl.createEl("li", { cls: "calendar-event-item" });
+      liEl.setAttribute("role", "button");
+      liEl.setAttribute("tabindex", "0");
+      liEl.createEl("span", {
+        text: ev.allDay ? "All day" : formatEventTime(ev.startDate),
+        cls: "calendar-event-time",
+      });
+      liEl.createEl("span", {
+        text: ev.title,
+        cls: "calendar-event-title",
+      });
+      if (ev.calendar) {
+        liEl.createEl("span", {
+          text: ev.calendar,
+          cls: "calendar-event-calendar",
+        });
+      }
+      liEl.addEventListener("click", () => {
+        this.openOrCreateEventNote(ev);
+      });
+      liEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          this.openOrCreateEventNote(ev);
+        }
+      });
+    }
+  }
+
+  private async openOrCreateEventNote(event: CalendarEvent): Promise<void> {
+    const existing = this.app.vault.getFiles().find((f) => {
+      const meta = this.app.metadataCache.getFileCache(f);
+      return meta?.frontmatter?.calendar_id === event.id;
+    });
+
+    if (existing) {
+      this.app.workspace.getLeaf("tab").openFile(existing);
+      return;
+    }
+
+    const path = this.pickEventNotePath(event);
+    const content = buildEventNoteContent(event);
+    try {
+      const file = await this.app.vault.create(path, content);
+      this.app.workspace.getLeaf("tab").openFile(file);
+    } catch (err) {
+      console.error("Failed to create event note", err);
+    }
+  }
+
+  private pickEventNotePath(event: CalendarEvent): string {
+    const base = buildEventNoteFilename(event);
+    const candidatePath = `Inbox/${base}.md`;
+    if (!this.app.vault.getAbstractFileByPath(candidatePath)) {
+      return candidatePath;
+    }
+    let n = 2;
+    while (
+      this.app.vault.getAbstractFileByPath(`Inbox/${base} (${n}).md`) &&
+      n < 100
+    ) {
+      n += 1;
+    }
+    return `Inbox/${base} (${n}).md`;
   }
 
   private renderFolderByArea(

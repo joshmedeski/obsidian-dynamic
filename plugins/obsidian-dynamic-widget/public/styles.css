@@ -94,6 +94,64 @@
   margin-top: 0.25em;
 }
 
+/* Calendar events section */
+.calendar-events-list {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.calendar-event-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5em;
+  margin-bottom: 0.35em;
+  line-height: 1.3;
+  cursor: pointer;
+  border-radius: var(--radius-s);
+  padding: 0.15em 0.35em;
+  margin-left: -0.35em;
+  margin-right: -0.35em;
+}
+
+.calendar-event-item:hover,
+.calendar-event-item:focus-visible {
+  background: var(--background-modifier-hover);
+  outline: none;
+}
+
+.calendar-event-item:hover .calendar-event-title,
+.calendar-event-item:focus-visible .calendar-event-title {
+  color: var(--text-accent);
+}
+
+.calendar-event-time {
+  flex: 0 0 auto;
+  min-width: 4.5em;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--font-smaller);
+  color: var(--text-muted);
+}
+
+.calendar-event-title {
+  flex: 1 1 auto;
+  color: var(--text-normal);
+  min-width: 0;
+}
+
+.calendar-event-calendar {
+  flex: 0 0 auto;
+  font-size: var(--font-smallest);
+  color: var(--text-faint);
+}
+
+.calendar-events-empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-smaller);
+}
+
 /* Editor Footer */
 .editor-footer {
   flex-shrink: 0;
