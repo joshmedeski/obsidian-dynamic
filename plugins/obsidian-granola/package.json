@@ -1,0 +1,16 @@
+{
+  "name": "obsidian-granola",
+  "private": true,
+  "scripts": {
+    "build": "vite build --mode production",
+    "dev": "vite build --watch --mode development"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "obsidian": "catalog:",
+    "obsidian-vite-config": "workspace:*",
+    "tslib": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:"
+  }
+}
