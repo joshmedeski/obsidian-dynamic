@@ -33,6 +33,23 @@
   let sortField: SortField = "dateAdded";
   let sortOrder: SortOrder = "desc";
 
+  let unlinkTarget: DiscogsRelease | null = null;
+
+  function requestUnlink(release: DiscogsRelease) {
+    unlinkTarget = release;
+  }
+
+  function cancelUnlink() {
+    unlinkTarget = null;
+  }
+
+  async function confirmUnlink() {
+    if (!unlinkTarget) return;
+    const id = unlinkTarget.id;
+    unlinkTarget = null;
+    await removeMBMatch(id);
+  }
+
   $: vaultMatches =
     ($vaultRevision, getVaultMatches(app, $pluginSettings.outputFolder));
   function hasMBMatch(release: DiscogsRelease): boolean {
@@ -437,28 +454,26 @@
                   title={$mbMatches[release.id].title}
                   loading="lazy"
                 />
-                {#if !isInVault(release, vaultMatches, $mbMatches[release.id])}
-                  <button
-                    class="mb-remove-btn"
-                    title="Remove MusicBrainz match"
-                    on:click|stopPropagation={() => removeMBMatch(release.id)}
+                <button
+                  class="mb-remove-btn"
+                  title="Unlink MusicBrainz match"
+                  on:click|stopPropagation={() => requestUnlink(release)}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="10"
+                    height="10"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="10"
-                      height="10"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="3"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                  </button>
-                {/if}
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
               {:else if $mbMatches[release.id]}
                 <div
                   class="mb-matched-no-art"
@@ -466,28 +481,26 @@
                 >
                   MB
                 </div>
-                {#if !isInVault(release, vaultMatches, $mbMatches[release.id])}
-                  <button
-                    class="mb-remove-btn"
-                    title="Remove MusicBrainz match"
-                    on:click|stopPropagation={() => removeMBMatch(release.id)}
+                <button
+                  class="mb-remove-btn"
+                  title="Unlink MusicBrainz match"
+                  on:click|stopPropagation={() => requestUnlink(release)}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="10"
+                    height="10"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="10"
-                      height="10"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="3"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                  </button>
-                {/if}
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
               {:else}
                 <div class="mb-no-match-fill" title="No MusicBrainz match">
                   ?
@@ -508,6 +521,28 @@
           </div>
         </div>
       {/each}
+    </div>
+  {/if}
+
+  {#if unlinkTarget}
+    <!-- svelte-ignore a11y-click-events-have-key-events -->
+    <!-- svelte-ignore a11y-no-static-element-interactions -->
+    <div class="unlink-modal-backdrop" on:click={cancelUnlink}>
+      <div class="unlink-modal" on:click|stopPropagation>
+        <div class="unlink-modal-title">Do you want to unlink the entry?</div>
+        <div class="unlink-modal-body">
+          {unlinkTarget.artist} – {unlinkTarget.title}
+        </div>
+        <div class="unlink-modal-actions">
+          <button class="unlink-modal-btn" on:click={cancelUnlink}
+            >Cancel</button
+          >
+          <button
+            class="unlink-modal-btn unlink-modal-btn-danger"
+            on:click={confirmUnlink}>Yes, unlink</button
+          >
+        </div>
+      </div>
     </div>
   {/if}
 </div>
@@ -884,5 +919,70 @@
     color: var(--text-faint);
     font-size: 1rem;
     font-weight: 600;
+  }
+
+  .unlink-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  }
+
+  .unlink-modal {
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    min-width: 320px;
+    max-width: 420px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  }
+
+  .unlink-modal-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-normal);
+    margin-bottom: 0.5rem;
+  }
+
+  .unlink-modal-body {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+    word-break: break-word;
+  }
+
+  .unlink-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  .unlink-modal-btn {
+    padding: 0.4rem 0.8rem;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+
+  .unlink-modal-btn:hover {
+    background: var(--background-modifier-hover);
+  }
+
+  .unlink-modal-btn-danger {
+    background: var(--text-error);
+    color: white;
+    border-color: var(--text-error);
+  }
+
+  .unlink-modal-btn-danger:hover {
+    opacity: 0.9;
+    background: var(--text-error);
   }
 </style>
