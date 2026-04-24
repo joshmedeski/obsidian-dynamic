@@ -769,6 +769,7 @@
     overflow-y: auto;
     flex: 1;
     align-items: start;
+    align-content: start;
   }
 
   .discogs-card {
