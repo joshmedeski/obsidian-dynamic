@@ -1,4 +1,4 @@
-import { ItemView, type TFile, type WorkspaceLeaf } from "obsidian";
+import { ItemView, TFile, type WorkspaceLeaf } from "obsidian";
 import { collectAreaNames, getAreaHierarchy } from "./areas-hierarchy";
 import { type CalendarEvent, fetchEventsForDate } from "./calendar";
 import type DynamicWidgetPlugin from "./main";
@@ -161,6 +161,30 @@ const IS_DAILY_FOLDERS: FolderWithTitle[] = [
   {
     folder: "Inbox",
     title: "📥 Inbox",
+    timeGroup: { compareRule: "relative-date" },
+  },
+];
+
+const RELATIONSHIP_FOLDERS: FolderWithTitle[] = [
+  { folder: "Inbox", title: "📥 Inbox" },
+  { folder: "Projects/Active", title: "✅ Active Projects" },
+  { folder: "Projects/Waiting For", title: "⏳ Waiting For" },
+  {
+    folder: "Projects/Someday Maybe",
+    title: "🔮 Someday Maybe",
+    timeGroup: { compareRule: "relative-date" },
+  },
+  {
+    folder: "Days",
+    title: "📅 Days",
+    timeGroup: { compareRule: "relative-date" },
+  },
+  { folder: "Goals", title: "🎯 Goals" },
+  { folder: "Areas", title: "🏠 Areas" },
+  { folder: "Resources", title: "📚 Resources" },
+  {
+    folder: "Archives",
+    title: "🗄️ Archives",
     timeGroup: { compareRule: "relative-date" },
   },
 ];
@@ -573,7 +597,14 @@ export class DynamicWidgetView extends ItemView {
     this.registerEvent(
       this.app.metadataCache.on("changed", (file: TFile) => {
         const activeFile = this.app.workspace.getActiveFile();
-        if (activeFile && activeFile.path === file.path) {
+        if (!activeFile) return;
+        if (activeFile.path === file.path) {
+          this.updateContent();
+          return;
+        }
+        // Relationship view depends on backlinks from other files, so any
+        // metadata change elsewhere can alter what should render.
+        if (activeFile.path.startsWith("Relationships/")) {
           this.updateContent();
         }
       }),
@@ -630,12 +661,15 @@ export class DynamicWidgetView extends ItemView {
 
   private determineActiveFileType(
     activeFile: TFile | null,
-  ): "area" | "areas" | "day" | "other" {
+  ): "area" | "areas" | "day" | "relationship" | "other" {
     if (!activeFile) {
       return "other";
     }
     if (activeFile.path.startsWith("Areas/")) {
       return "area";
+    }
+    if (activeFile.path.startsWith("Relationships/")) {
+      return "relationship";
     }
     const metadata = this.app.metadataCache.getFileCache(activeFile);
     if (metadata?.frontmatter?.areas) {
@@ -840,6 +874,34 @@ export class DynamicWidgetView extends ItemView {
         if (areaSection) {
           this.contentEl.appendChild(areaSection);
         }
+      }
+    }
+  }
+
+  private renderRelationshipContent(activeFile: TFile): void {
+    const metadata = this.app.metadataCache.getFileCache(activeFile);
+
+    this.renderMedia({
+      cover: metadata?.frontmatter?.cover,
+      activeFilePath: activeFile.path,
+    });
+
+    const resolved = this.app.metadataCache.resolvedLinks;
+    const backlinks: TFile[] = [];
+    for (const sourcePath in resolved) {
+      if (!resolved[sourcePath]?.[activeFile.path]) continue;
+      if (sourcePath === activeFile.path) continue;
+      const source = this.app.vault.getAbstractFileByPath(sourcePath);
+      if (source instanceof TFile && source.extension === "md") {
+        backlinks.push(source);
+      }
+    }
+
+    const folders = this.filesByFolders(backlinks, RELATIONSHIP_FOLDERS);
+    for (const folder of folders) {
+      const section = this.renderFolderSection(folder.folder, folder.files);
+      if (section) {
+        this.contentEl.appendChild(section);
       }
     }
   }
@@ -1104,6 +1166,9 @@ export class DynamicWidgetView extends ItemView {
         break;
       case "day":
         this.renderDateContent();
+        break;
+      case "relationship":
+        this.renderRelationshipContent(activeFile);
         break;
       default:
         break;
