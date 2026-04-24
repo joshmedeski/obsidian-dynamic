@@ -27,6 +27,7 @@
   type TriFilter = "all" | "yes" | "no";
   let vaultFilter: TriFilter = "all";
   let mbFilter: TriFilter = "all";
+  let searchQuery = "";
 
   type SortField = "artist" | "releaseDate" | "dateAdded";
   type SortOrder = "asc" | "desc";
@@ -56,12 +57,19 @@
     return !!$mbMatches[release.id];
   }
 
+  $: normalizedQuery = searchQuery.trim().toLowerCase();
   $: filteredReleases = $discogsCollection
     .filter((r) => {
       if (vaultFilter === "yes" && !isInVault(r, vaultMatches, $mbMatches[r.id])) return false;
       if (vaultFilter === "no" && isInVault(r, vaultMatches, $mbMatches[r.id])) return false;
       if (mbFilter === "yes" && !hasMBMatch(r)) return false;
       if (mbFilter === "no" && hasMBMatch(r)) return false;
+      if (
+        normalizedQuery &&
+        !r.artist.toLowerCase().includes(normalizedQuery) &&
+        !r.title.toLowerCase().includes(normalizedQuery)
+      )
+        return false;
       return true;
     })
     .sort((a, b) => {
@@ -147,6 +155,52 @@
 </script>
 
 <div class="discogs-collection-view">
+  <div class="discogs-search">
+    <svg
+      class="discogs-search-icon"
+      xmlns="http://www.w3.org/2000/svg"
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+    <input
+      type="text"
+      class="discogs-search-input"
+      placeholder="Filter by artist or album..."
+      bind:value={searchQuery}
+    />
+    {#if searchQuery}
+      <button
+        class="discogs-search-clear"
+        on:click={() => (searchQuery = "")}
+        title="Clear search"
+        aria-label="Clear search"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    {/if}
+  </div>
   <div class="discogs-header">
     <div class="discogs-filters">
       <div class="filter-group">
@@ -553,6 +607,54 @@
     height: 100%;
     display: flex;
     flex-direction: column;
+  }
+
+  .discogs-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .discogs-search-icon {
+    position: absolute;
+    left: 0.6rem;
+    color: var(--text-faint);
+    pointer-events: none;
+  }
+
+  .discogs-search-input {
+    width: 100%;
+    padding: 0.4rem 2rem 0.4rem 2rem;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    font-size: 0.85rem;
+  }
+
+  .discogs-search-input:focus {
+    outline: none;
+    border-color: var(--interactive-accent);
+  }
+
+  .discogs-search-clear {
+    position: absolute;
+    right: 0.4rem;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .discogs-search-clear:hover {
+    color: var(--text-normal);
+    background: var(--background-modifier-hover);
   }
 
   .discogs-header {
