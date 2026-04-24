@@ -51,3 +51,62 @@ export function formatDate(timestamp: number): string {
   });
   return formatted.replace(/\s?(AM|PM)$/i, (_, p) => p.toLowerCase());
 }
+
+export function formatRelativeDeadline(
+  deadline: string | number | Date,
+): string | null {
+  const dueDay = deadlineToLocalDay(deadline);
+  if (!dueDay) return null;
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const days = Math.round(
+    (dueDay.getTime() - today.getTime()) / 86_400_000,
+  );
+
+  const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+  return `🏁 ${rtf.format(days, "day")}`;
+}
+
+// YAML `deadline: 2026-04-21` (unquoted) is parsed as a JS Date at UTC midnight,
+// which falls on the previous local day in timezones west of UTC. Pin to the
+// calendar day the user wrote, regardless of timezone.
+function deadlineToLocalDay(
+  deadline: string | number | Date,
+): Date | null {
+  if (typeof deadline === "string") {
+    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(deadline);
+    if (match) {
+      return new Date(
+        Number(match[1]),
+        Number(match[2]) - 1,
+        Number(match[3]),
+      );
+    }
+    const parsed = new Date(deadline);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return new Date(
+      parsed.getFullYear(),
+      parsed.getMonth(),
+      parsed.getDate(),
+    );
+  }
+  if (deadline instanceof Date) {
+    if (Number.isNaN(deadline.getTime())) return null;
+    return new Date(
+      deadline.getUTCFullYear(),
+      deadline.getUTCMonth(),
+      deadline.getUTCDate(),
+    );
+  }
+  if (typeof deadline === "number") {
+    const parsed = new Date(deadline);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return new Date(
+      parsed.getFullYear(),
+      parsed.getMonth(),
+      parsed.getDate(),
+    );
+  }
+  return null;
+}

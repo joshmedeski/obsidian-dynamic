@@ -41,6 +41,13 @@
   text-decoration: underline;
 }
 
+.dynamic-widget-project-deadline {
+  font-size: var(--font-smaller);
+  color: var(--text-muted);
+  line-height: 1.2;
+  margin-top: 0.1em;
+}
+
 /* Container styling */
 .dynamic-widget-container {
   padding: 1em;

@@ -2,6 +2,7 @@ import { ItemView, type TFile, type WorkspaceLeaf } from "obsidian";
 import { collectAreaNames, getAreaHierarchy } from "./areas-hierarchy";
 import type DynamicWidgetPlugin from "./main";
 import {
+  formatRelativeDeadline,
   isFilePrivate,
   isValidHex,
   normalizeAreasFrontmatter,
@@ -319,6 +320,19 @@ export class DynamicWidgetView extends ItemView {
             this.app.workspace.getLeaf("tab").openFile(note);
           });
         }
+
+        const deadline = metadata?.frontmatter?.deadline;
+        const isArchived = note.path.startsWith("Archives/");
+        if (deadline != null && !isArchived) {
+          const label = formatRelativeDeadline(deadline);
+          if (label) {
+            projectEl.createEl("div", {
+              text: label,
+              cls: "dynamic-widget-project-deadline",
+            });
+          }
+        }
+
         return projectEl;
       });
     for (const liEl of liEls) {
