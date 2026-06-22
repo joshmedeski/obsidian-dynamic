@@ -64,6 +64,17 @@ body {
   background-color: var(--transparent-background);
 }
 
+/**
+ * When "Translucent window" is enabled, Obsidian's core app.css applies
+ * `.is-translucent .app-container { background-color: ... }` (specificity 0,2,0),
+ * which out-specifies the rule above and ignores the overlay opacity.
+ * Re-assert our overlay at higher specificity (0,2,1) so the configured
+ * opacity always wins, in both windowed and full-screen modes.
+ */
+body.is-translucent .app-container {
+  background-color: var(--transparent-background);
+}
+
 .external-link {
   padding-inline-end: 1.2rem;
 }
