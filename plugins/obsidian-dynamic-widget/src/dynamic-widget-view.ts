@@ -109,7 +109,8 @@ function buildEventNoteContent(event: CalendarEvent): string {
 
 type TimeGroup =
   | { compareRule: "start-of-day"; staleLabel: string; updatedLabel: string }
-  | { compareRule: "relative-date" };
+  | { compareRule: "relative-date" }
+  | { compareRule: "day-heatmap" };
 
 type FolderWithTitle = {
   folder: string;
@@ -177,7 +178,7 @@ const RELATIONSHIP_FOLDERS: FolderWithTitle[] = [
   {
     folder: "Days",
     title: "📅 Days",
-    timeGroup: { compareRule: "relative-date" },
+    timeGroup: { compareRule: "day-heatmap" },
   },
   { folder: "Goals", title: "🎯 Goals" },
   { folder: "Areas", title: "🏠 Areas" },
@@ -370,6 +371,184 @@ export class DynamicWidgetView extends ItemView {
     return sectionEl;
   }
 
+  private makeDaysHeatmap(title: string, files: TFile[]): Element {
+    if (!files || files.length === 0) {
+      return document.createElement("div");
+    }
+
+    const linked = new Map<string, TFile>();
+    for (const file of files) {
+      if (!file.basename.match(dayFileNameRegex)) continue;
+      linked.set(file.basename, file);
+    }
+
+    if (linked.size === 0) {
+      return document.createElement("div");
+    }
+
+    const keys = [...linked.keys()].sort();
+    const parseKey = (key: string): Date => {
+      const [y, m, d] = key.split("-").map(Number);
+      return new Date(y, m - 1, d);
+    };
+    const minDate = parseKey(keys[0]);
+    const maxDate = parseKey(keys[keys.length - 1]);
+
+    const minDayOfWeek = minDate.getDay();
+    const minDaysFromMonday = minDayOfWeek === 0 ? 6 : minDayOfWeek - 1;
+    const snappedMin = new Date(
+      minDate.getFullYear(),
+      minDate.getMonth(),
+      minDate.getDate() - minDaysFromMonday,
+    );
+    const maxDayOfWeek = maxDate.getDay();
+    const maxDaysToSunday = maxDayOfWeek === 0 ? 0 : 7 - maxDayOfWeek;
+    const snappedMax = new Date(
+      maxDate.getFullYear(),
+      maxDate.getMonth(),
+      maxDate.getDate() + maxDaysToSunday,
+    );
+
+    type Cell = { date: Date; file?: TFile };
+    type Week = { monday: Date; cells: Cell[] };
+    const weeks: Week[] = [];
+    const cursor = new Date(snappedMin);
+    while (cursor.getTime() <= snappedMax.getTime()) {
+      const monday = new Date(cursor);
+      const cells: Cell[] = [];
+      for (let row = 0; row < 7; row++) {
+        const cellDate = new Date(cursor);
+        const file = linked.get(toLocalIsoDate(cellDate));
+        cells.push(file ? { date: cellDate, file } : { date: cellDate });
+        cursor.setDate(cursor.getDate() + 1);
+      }
+      weeks.push({ monday, cells });
+    }
+
+    const activeFile = this.app.workspace.getActiveFile();
+    const suppressInteractivity =
+      this.plugin.privateMode &&
+      activeFile !== null &&
+      (activeFile.path.startsWith("Relationships/") ||
+        isFilePrivate(this.app, activeFile));
+
+    const sectionEl = document.createElement("section");
+    sectionEl.classList.add("dynamic-widget-heatmap");
+    sectionEl.createEl("h3", { text: title });
+
+    const chunksEl = sectionEl.createEl("div", {
+      cls: "dynamic-widget-heatmap-chunks",
+    });
+
+    const CELL_SIZE = 11;
+    const CELL_GAP = 2;
+    const CELL_PITCH = CELL_SIZE + CELL_GAP;
+    const MIN_WEEKS_PER_CHUNK = 4;
+
+    const MIN_LABEL_GAP = 3;
+
+    const renderChunks = (weeksPerChunk: number): void => {
+      chunksEl.empty();
+      for (let start = 0; start < weeks.length; start += weeksPerChunk) {
+        const chunkWeeks = weeks.slice(start, start + weeksPerChunk);
+        const chunkEl = chunksEl.createEl("div", {
+          cls: "dynamic-widget-heatmap-chunk",
+        });
+        const yearsEl = chunkEl.createEl("div", {
+          cls: "dynamic-widget-heatmap-years",
+        });
+        const monthsEl = chunkEl.createEl("div", {
+          cls: "dynamic-widget-heatmap-months",
+        });
+        const gridEl = chunkEl.createEl("div", {
+          cls: "dynamic-widget-heatmap-grid",
+        });
+
+        let lastYear = -1;
+        let lastYearCol = Number.NEGATIVE_INFINITY;
+        let lastMonth = -1;
+        let lastMonthCol = Number.NEGATIVE_INFINITY;
+
+        chunkWeeks.forEach((week, col) => {
+          const year = week.monday.getFullYear();
+          const month = week.monday.getMonth();
+
+          if (year !== lastYear && col - lastYearCol >= MIN_LABEL_GAP) {
+            const yearLabel = yearsEl.createEl("span", {
+              text: `'${String(year).slice(-2)}`,
+            });
+            yearLabel.style.gridColumn = String(col + 1);
+            lastYearCol = col;
+          }
+          if (year !== lastYear) lastYear = year;
+
+          if (month !== lastMonth && col - lastMonthCol >= MIN_LABEL_GAP) {
+            const monthName = week.monday.toLocaleDateString("en-US", {
+              month: "short",
+            });
+            const labelEl = monthsEl.createEl("span", { text: monthName });
+            labelEl.style.gridColumn = String(col + 1);
+            lastMonthCol = col;
+          }
+          if (month !== lastMonth) lastMonth = month;
+
+          for (const cell of week.cells) {
+            const cellEl = gridEl.createEl("div", {
+              cls: "dynamic-widget-heatmap-cell",
+            });
+            if (cell.file) {
+              cellEl.classList.add("is-linked");
+              if (!suppressInteractivity) {
+                const file = cell.file;
+                cellEl.setAttribute(
+                  "title",
+                  cell.date.toLocaleDateString("en-US", {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  }),
+                );
+                cellEl.setAttribute("role", "button");
+                cellEl.setAttribute("tabindex", "0");
+                cellEl.addEventListener("click", (event) => {
+                  event.preventDefault();
+                  this.app.workspace.getLeaf("tab").openFile(file);
+                });
+                cellEl.addEventListener("keydown", (event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    this.app.workspace.getLeaf("tab").openFile(file);
+                  }
+                });
+              }
+            } else {
+              cellEl.setAttribute("aria-hidden", "true");
+            }
+          }
+        });
+      }
+    };
+
+    let currentWeeksPerChunk = Math.min(weeks.length, 20);
+    renderChunks(currentWeeksPerChunk);
+
+    const observer = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width ?? 0;
+      if (width <= 0) return;
+      const fit = Math.floor(width / CELL_PITCH);
+      const next = Math.max(MIN_WEEKS_PER_CHUNK, Math.min(weeks.length, fit));
+      if (next !== currentWeeksPerChunk) {
+        currentWeeksPerChunk = next;
+        renderChunks(next);
+      }
+    });
+    observer.observe(chunksEl);
+    this.register(() => observer.disconnect());
+
+    return sectionEl;
+  }
+
   private makeUlLinkList(list: TFile[] | undefined): Element {
     if (!list || list.length === 0) {
       return document.createElement("div");
@@ -505,6 +684,8 @@ export class DynamicWidgetView extends ItemView {
       }
       case "relative-date":
         return this.makeUlLinkListWithRelativeDateGroups(folder.title, files);
+      case "day-heatmap":
+        return this.makeDaysHeatmap(folder.title, files);
     }
   }
 
@@ -952,7 +1133,7 @@ export class DynamicWidgetView extends ItemView {
 
   private renderCalendarEventsSection(date: Date): void {
     const sectionEl = this.contentEl.createEl("section");
-    sectionEl.createEl("h3", { text: "📅 Today's Events" });
+    sectionEl.createEl("h3", { text: "📅 Events" });
     const bodyEl = sectionEl.createEl("div", {
       cls: "calendar-events-body",
     });
