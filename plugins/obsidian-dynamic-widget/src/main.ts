@@ -10,6 +10,10 @@ import {
   PrivateNoteView,
   VIEW_TYPE_PRIVATE_NOTE,
 } from './private-note-view';
+import {
+  SomedayMaybeView,
+  VIEW_TYPE_SOMEDAY_MAYBE,
+} from './someday-maybe-view';
 import { isFilePrivate } from './utils';
 
 interface PluginData {
@@ -46,6 +50,12 @@ export default class DynamicWidgetPlugin extends Plugin {
       (leaf) => new AreasView(leaf, this)
     );
 
+    // Register the someday maybe view
+    this.registerView(
+      VIEW_TYPE_SOMEDAY_MAYBE,
+      (leaf) => new SomedayMaybeView(leaf, this)
+    );
+
     // Intercept private file opens
     this.registerEvent(
       this.app.workspace.on('file-open', (file) => {
@@ -75,6 +85,15 @@ export default class DynamicWidgetPlugin extends Plugin {
       name: 'Open Areas',
       callback: () => {
         this.activateAreasView();
+      },
+    });
+
+    // Add command to open someday maybe view
+    this.addCommand({
+      id: 'open-someday-maybe-view',
+      name: 'Open Someday Maybe',
+      callback: () => {
+        this.activateSomedayMaybeView();
       },
     });
 
@@ -140,6 +159,14 @@ export default class DynamicWidgetPlugin extends Plugin {
     for (const leaf of areasLeaves) {
       (leaf.view as AreasView).refreshContent();
     }
+
+    // Re-render someday maybe view
+    const somedayLeaves = this.app.workspace.getLeavesOfType(
+      VIEW_TYPE_SOMEDAY_MAYBE,
+    );
+    for (const leaf of somedayLeaves) {
+      (leaf.view as SomedayMaybeView).refreshContent();
+    }
   }
 
   private updateStatusBar(): void {
@@ -178,11 +205,21 @@ export default class DynamicWidgetPlugin extends Plugin {
     this.app.workspace.revealLeaf(leaf);
   }
 
+  async activateSomedayMaybeView() {
+    const leaf = this.app.workspace.getLeaf('tab');
+    await leaf.setViewState({
+      type: VIEW_TYPE_SOMEDAY_MAYBE,
+      active: true,
+    });
+    this.app.workspace.revealLeaf(leaf);
+  }
+
   onunload() {
     this.editorFooter.detach();
     // Clean up views when plugin is disabled
     this.app.workspace.detachLeavesOfType(VIEW_TYPE_DYNAMIC_WIDGET);
     this.app.workspace.detachLeavesOfType(VIEW_TYPE_PRIVATE_NOTE);
     this.app.workspace.detachLeavesOfType(VIEW_TYPE_AREAS);
+    this.app.workspace.detachLeavesOfType(VIEW_TYPE_SOMEDAY_MAYBE);
   }
 }
