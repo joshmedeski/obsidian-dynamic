@@ -67,8 +67,9 @@ export async function downloadCoverArtCascade(
   mbid: string,
   title: string,
   filepath: string,
+  entity: "release-group" | "release" = "release-group",
 ): Promise<string | null> {
-  const base = `https://coverartarchive.org/release-group/${mbid}`;
+  const base = `https://coverartarchive.org/${entity}/${mbid}`;
   const urls = [`${base}/front`, `${base}/front-1200`, `${base}/front-500`];
   for (const url of urls) {
     try {
@@ -98,6 +99,16 @@ function getMusicReplacements(
     released: result.firstReleaseDate,
     coverArt: coverArt ? `[[${coverArt}]]` : "",
     date: new Date().toISOString().split("T")[0],
+    // Version (release) fields — default to empty so templates referencing them
+    // never leave literal {{placeholders}} for non-version matches. Overridden
+    // by `extra` when a specific version is pinned.
+    releaseId: "",
+    country: "",
+    label: "",
+    catalogNumber: "",
+    format: "",
+    barcode: "",
+    trackCount: "",
     ...extra,
   };
 }
@@ -233,8 +244,15 @@ const DEFAULT_TEMPLATE = `---
 title: "{{title}}"
 artist: "{{artist}}"
 mbid: "{{mbid}}"
+releaseId: "{{releaseId}}"
 type: "{{type}}"
 released: "{{released}}"
+country: "{{country}}"
+label: "{{label}}"
+catalogNumber: "{{catalogNumber}}"
+format: "{{format}}"
+barcode: "{{barcode}}"
+trackCount: "{{trackCount}}"
 cover: "{{coverArt}}"
 created: {{date}}
 ---

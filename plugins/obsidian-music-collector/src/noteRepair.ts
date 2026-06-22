@@ -28,6 +28,7 @@ function buildVariableMap(
 		purchased: dateAdded,
 		dateAdded: dateAdded,
 		discogsId: String(release.id),
+		format: frontmatter.format ?? release.format ?? "",
 	};
 }
 

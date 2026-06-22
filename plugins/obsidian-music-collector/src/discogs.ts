@@ -24,6 +24,7 @@ function toDiscogsRelease(item: DiscogsCollectionItem): DiscogsRelease {
     dateAdded: item.date_added,
     coverImageUrl: info.cover_image,
     discogsUrl: `https://www.discogs.com/release/${info.id}`,
+    format: info.formats?.[0]?.name,
   };
 }
 

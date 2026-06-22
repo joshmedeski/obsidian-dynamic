@@ -72,11 +72,26 @@ export interface DiscogsRelease {
   dateAdded: string;
   coverImageUrl: string;
   discogsUrl: string;
+  format?: string;
 }
 
 export interface DiscogsCache {
   releases: DiscogsRelease[];
   lastFetched: number; // Unix timestamp ms
+}
+
+export interface MBReleaseVersion {
+  id: string;
+  title: string;
+  date: string;
+  country: string;
+  label: string;
+  catalogNumber: string;
+  format: string;
+  barcode: string;
+  trackCount: number;
+  disambiguation: string;
+  status: string;
 }
 
 export interface MBMatch {
@@ -87,6 +102,8 @@ export interface MBMatch {
   firstReleaseDate: string;
   coverArtUrl: string | null;
   matchedAt: number;
+  // Present only when a specific version (release) is pinned.
+  release?: MBReleaseVersion & { coverArtUrl: string | null };
 }
 
 export type MBMatchMap = Record<number, MBMatch>;

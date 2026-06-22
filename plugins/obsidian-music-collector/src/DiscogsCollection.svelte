@@ -1,6 +1,6 @@
 <script lang="ts">
   import { type App, TFile } from "obsidian";
-  import type { DiscogsRelease } from "./types";
+  import type { DiscogsRelease, MBReleaseVersion } from "./types";
   import {
     discogsCollection,
     discogsLoading,
@@ -12,10 +12,12 @@
     mbMatches,
     mbScanState,
     removeMBMatch,
+    pinMBVersion,
     bulkImportState,
     triggerBulkImport,
     stopBulkImport,
   } from "./store";
+  import MBVersionPicker from "./MBVersionPicker.svelte";
   import { triggerMBScan } from "./store";
   import { stopScan } from "./mbScanner";
   import { fetchDiscogsCollection } from "./discogs";
@@ -27,6 +29,8 @@
   type TriFilter = "all" | "yes" | "no";
   let vaultFilter: TriFilter = "all";
   let mbFilter: TriFilter = "all";
+  type FormatFilter = "all" | "vinyl" | "cd" | "other";
+  let formatFilter: FormatFilter = "all";
   let searchQuery = "";
 
   type SortField = "artist" | "releaseDate" | "dateAdded";
@@ -35,9 +39,25 @@
   let sortOrder: SortOrder = "desc";
 
   let unlinkTarget: DiscogsRelease | null = null;
+  let versionTarget: DiscogsRelease | null = null;
 
   function requestUnlink(release: DiscogsRelease) {
     unlinkTarget = release;
+  }
+
+  function requestChooseVersion(release: DiscogsRelease) {
+    versionTarget = release;
+  }
+
+  function cancelChooseVersion() {
+    versionTarget = null;
+  }
+
+  async function handlePinVersion(version: MBReleaseVersion | null) {
+    if (!versionTarget) return;
+    const id = versionTarget.id;
+    versionTarget = null;
+    await pinMBVersion(id, version);
   }
 
   function cancelUnlink() {
@@ -64,6 +84,13 @@
       if (vaultFilter === "no" && isInVault(r, vaultMatches, $mbMatches[r.id])) return false;
       if (mbFilter === "yes" && !hasMBMatch(r)) return false;
       if (mbFilter === "no" && hasMBMatch(r)) return false;
+      if (formatFilter !== "all") {
+        const fmt = r.format?.toLowerCase() ?? "";
+        if (formatFilter === "vinyl" && fmt !== "vinyl") return false;
+        if (formatFilter === "cd" && fmt !== "cd") return false;
+        if (formatFilter === "other" && (fmt === "vinyl" || fmt === "cd"))
+          return false;
+      }
       if (
         normalizedQuery &&
         !r.artist.toLowerCase().includes(normalizedQuery) &&
@@ -234,6 +261,27 @@
           <button
             class="filter-btn {mbFilter === 'no' ? 'is-active' : ''}"
             on:click={() => (mbFilter = "no")}>No match</button
+          >
+        </div>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Format</span>
+        <div class="filter-options">
+          <button
+            class="filter-btn {formatFilter === 'all' ? 'is-active' : ''}"
+            on:click={() => (formatFilter = "all")}>All</button
+          >
+          <button
+            class="filter-btn {formatFilter === 'vinyl' ? 'is-active' : ''}"
+            on:click={() => (formatFilter = "vinyl")}>Vinyl</button
+          >
+          <button
+            class="filter-btn {formatFilter === 'cd' ? 'is-active' : ''}"
+            on:click={() => (formatFilter = "cd")}>CD</button
+          >
+          <button
+            class="filter-btn {formatFilter === 'other' ? 'is-active' : ''}"
+            on:click={() => (formatFilter = "other")}>Other</button
           >
         </div>
       </div>
@@ -505,9 +553,31 @@
                 <img
                   src={$mbMatches[release.id].coverArtUrl}
                   alt="MusicBrainz cover"
-                  title={$mbMatches[release.id].title}
+                  title={$mbMatches[release.id].release?.title ||
+                    $mbMatches[release.id].title}
                   loading="lazy"
                 />
+                <button
+                  class="mb-version-btn"
+                  title="Choose version"
+                  on:click|stopPropagation={() => requestChooseVersion(release)}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="11"
+                    height="11"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                    <polyline points="2 17 12 22 22 17" />
+                    <polyline points="2 12 12 17 22 12" />
+                  </svg>
+                </button>
                 <button
                   class="mb-remove-btn"
                   title="Unlink MusicBrainz match"
@@ -528,14 +598,44 @@
                     <line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
                 </button>
+                {#if $mbMatches[release.id]?.release?.format}
+                  <span
+                    class="mb-version-badge"
+                    title={$mbMatches[release.id].release?.format}
+                  >
+                    {$mbMatches[release.id].release?.format}
+                  </span>
+                {/if}
               {:else if $mbMatches[release.id]}
                 <div
                   class="mb-matched-no-art"
-                  title={$mbMatches[release.id].title}
+                  title={$mbMatches[release.id].release?.title ||
+                    $mbMatches[release.id].title}
                 >
                   MB
                 </div>
                 <button
+                  class="mb-version-btn"
+                  title="Choose version"
+                  on:click|stopPropagation={() => requestChooseVersion(release)}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="11"
+                    height="11"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                    <polyline points="2 17 12 22 22 17" />
+                    <polyline points="2 12 12 17 22 12" />
+                  </svg>
+                </button>
+                <button
                   class="mb-remove-btn"
                   title="Unlink MusicBrainz match"
                   on:click|stopPropagation={() => requestUnlink(release)}
@@ -555,6 +655,14 @@
                     <line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
                 </button>
+                {#if $mbMatches[release.id]?.release?.format}
+                  <span
+                    class="mb-version-badge"
+                    title={$mbMatches[release.id].release?.format}
+                  >
+                    {$mbMatches[release.id].release?.format}
+                  </span>
+                {/if}
               {:else}
                 <div class="mb-no-match-fill" title="No MusicBrainz match">
                   ?
@@ -569,13 +677,31 @@
             <div class="discogs-artist" title={release.artist}>
               {release.artist}
             </div>
-            {#if release.year}
-              <span class="discogs-year">{release.year}</span>
+            {#if release.format || release.year}
+              <span class="discogs-meta">
+                {#if release.format}
+                  <span class="discogs-format">{release.format}</span>
+                {/if}
+                {#if release.format && release.year}
+                  <span class="discogs-meta-sep">·</span>
+                {/if}
+                {#if release.year}
+                  <span class="discogs-year">{release.year}</span>
+                {/if}
+              </span>
             {/if}
           </div>
         </div>
       {/each}
     </div>
+  {/if}
+
+  {#if versionTarget && $mbMatches[versionTarget.id]}
+    <MBVersionPicker
+      match={$mbMatches[versionTarget.id]}
+      onPin={handlePinVersion}
+      onClose={cancelChooseVersion}
+    />
   {/if}
 
   {#if unlinkTarget}
@@ -864,6 +990,22 @@
     text-overflow: ellipsis;
   }
 
+  .discogs-meta {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    font-size: 0.7rem;
+    color: var(--text-faint);
+  }
+
+  .discogs-format {
+    color: var(--text-muted);
+  }
+
+  .discogs-meta-sep {
+    color: var(--text-faint);
+  }
+
   .discogs-year {
     font-size: 0.7rem;
     color: var(--text-faint);
@@ -977,6 +1119,47 @@
   .mb-cover-container:hover .mb-remove-btn,
   .discogs-card:hover .mb-remove-btn {
     display: flex;
+  }
+
+  .mb-version-btn {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+  }
+
+  .mb-cover-container:hover .mb-version-btn,
+  .discogs-card:hover .mb-version-btn {
+    display: flex;
+  }
+
+  .mb-version-badge {
+    position: absolute;
+    bottom: 4px;
+    left: 4px;
+    right: 4px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
   }
 
   .mb-matched-no-art {

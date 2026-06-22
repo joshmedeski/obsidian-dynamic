@@ -77,20 +77,45 @@ export async function startBulkImport(
 
     try {
       const { outputFolder, filenameFormat } = settings;
+      const version = match.release;
+      // A pinned version becomes a separate vault entry, so the note title and
+      // filename use the release's own title (plus its MusicBrainz
+      // disambiguation, e.g. "(Mono)", which is what distinguishes editions
+      // that otherwise share the album title).
+      const baseTitle =
+        version?.title && version.title.trim() ? version.title : match.title;
+      const effectiveTitle =
+        version?.disambiguation && version.disambiguation.trim()
+          ? `${baseTitle} (${version.disambiguation})`
+          : baseTitle;
       const filename =
         (filenameFormat || "{{artist}} - {{title}}")
           .replace(/\{\{\s*artist\s*\}\}/g, match.artist)
-          .replace(/\{\{\s*title\s*\}\}/g, match.title)
+          .replace(/\{\{\s*title\s*\}\}/g, effectiveTitle)
           .replace(/[\\/:*?"<>|]/g, "")
           .trim() + ".md";
       const filepath = `${outputFolder}/${filename}`;
 
-      const coverArt = await downloadCoverArtCascade(
-        app,
-        match.mbid,
-        match.title,
-        filepath,
-      );
+      // Pinned version: pull cover from the release; fall back to the
+      // release-group cover when the specific release has no art.
+      let coverArt: string | null = null;
+      if (version) {
+        coverArt = await downloadCoverArtCascade(
+          app,
+          version.id,
+          effectiveTitle,
+          filepath,
+          "release",
+        );
+      }
+      if (coverArt === null) {
+        coverArt = await downloadCoverArtCascade(
+          app,
+          match.mbid,
+          effectiveTitle,
+          filepath,
+        );
+      }
 
       if (coverArt === null) {
         bulkImportState.update((s) => ({
@@ -104,18 +129,34 @@ export async function startBulkImport(
 
       const result: SearchResult = {
         mbid: match.mbid,
-        title: match.title,
+        title: effectiveTitle,
         artist: match.artist,
         primaryType: match.primaryType,
         firstReleaseDate: match.firstReleaseDate,
         coverArtUrl: match.coverArtUrl,
       };
 
+      const extra: Record<string, string> = {
+        discogsId: String(release.id),
+        dateAdded: release.dateAdded.split("T")[0],
+        format: release.format ?? "",
+      };
+      if (version) {
+        extra.releaseId = version.id;
+        extra.country = version.country;
+        extra.label = version.label;
+        extra.catalogNumber = version.catalogNumber;
+        extra.barcode = version.barcode;
+        extra.trackCount = version.trackCount ? String(version.trackCount) : "";
+        if (version.format) extra.format = version.format;
+        if (version.date) extra.released = version.date;
+      }
+
       const file = await createAlbumNote(
         app,
         result,
         settings,
-        { discogsId: String(release.id), dateAdded: release.dateAdded.split("T")[0] },
+        extra,
         { openAfterCreate: false, coverArtOverride: coverArt },
       );
 

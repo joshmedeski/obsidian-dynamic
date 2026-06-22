@@ -1,7 +1,13 @@
 import { writable, get } from 'svelte/store';
 import type MusicCollectorPlugin from './main';
 import { DEFAULT_SETTINGS, type MusicCollectorSettings } from './types';
-import type { DiscogsCache, DiscogsRelease, MBMatchMap } from './types';
+import type {
+  DiscogsCache,
+  DiscogsRelease,
+  MBMatchMap,
+  MBReleaseVersion,
+} from './types';
+import { checkCoverArt, checkReleaseCoverArt } from './musicbrainz';
 import { mbMatches, startScan, mbScanState } from './mbScanner';
 import { bulkImportState, startBulkImport, stopBulkImport } from './bulkImporter';
 
@@ -53,6 +59,37 @@ export async function removeMBMatch(discogsId: number) {
     delete next[discogsId];
     return next;
   });
+  await plugin.saveMBMatches(get(mbMatches));
+}
+
+export async function pinMBVersion(
+  discogsId: number,
+  version: MBReleaseVersion | null,
+) {
+  const current = get(mbMatches)[discogsId];
+  if (!current) return;
+
+  if (version === null) {
+    // Clear the pinned version: restore release-group cover.
+    const groupCover = await checkCoverArt(current.mbid);
+    const { release, ...rest } = current;
+    mbMatches.update((m) => ({
+      ...m,
+      [discogsId]: { ...rest, coverArtUrl: groupCover },
+    }));
+  } else {
+    const releaseCover = await checkReleaseCoverArt(version.id);
+    const coverArtUrl = releaseCover ?? current.coverArtUrl;
+    mbMatches.update((m) => ({
+      ...m,
+      [discogsId]: {
+        ...current,
+        coverArtUrl,
+        release: { ...version, coverArtUrl: releaseCover },
+      },
+    }));
+  }
+
   await plugin.saveMBMatches(get(mbMatches));
 }
 
